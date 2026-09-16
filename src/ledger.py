@@ -111,7 +111,8 @@ def main():
     for kv in args.field:
         k, _, v = kv.partition("=")
         fields[k] = v
-    append(args.run_id, status=args.status, **fields)
+    fields.setdefault("status", args.status)
+    append(args.run_id, **fields)
     print(f"appended {args.run_id} -> {LEDGER}")
 
 
