@@ -22,7 +22,11 @@ Quantize the best available ALMA model (**X-ALMA-13B**) and measure quality/effi
   ```
   AGENTS.md, project.md
   env/            # env build scripts + locked requirements
-  src/            # harness: merge_xalma, generate, score, efficiency, quant_*, sensitivity_scan, analyze
+  src/common/     # shared: device, ledger, matrix, group_langs.json, sync.sh
+  src/model/      # model handling: merge_xalma, generate, generate_gguf
+  src/quantize/   # quantization: quant_gptq, quant_gguf, quant_gguf_layerwise
+  src/eval/       # scoring/evaluation: score, efficiency, efficiency_gguf, analyze
+  src/data/       # data prep: prepare_data
   src/slurm/      # sbatch job scripts (per phase)
   models/         # gitignored: merged/, gptq/, gguf/, w8a8/ artifacts
   data/           # gitignored: downloaded benchmarks
@@ -43,9 +47,9 @@ Quantize the best available ALMA model (**X-ALMA-13B**) and measure quality/effi
 ## 4. Environment (dual: Slurm NVIDIA cluster + M2 Pro Mac)
 - Build scripts `env/setup_slurm.sh` and `env/setup_mac.sh`; both documented in `env/README.md` (conda preferred, else venv; python 3.11).
 - Slurm: probe first (`sinfo`, `scontrol show node`, `module avail`, `nvidia-smi`, `python --version`); CUDA torch; llama.cpp with `-DGGML_CUDA=ON`.
-- Mac (Apple Silicon): `pip install torch` (MPS build); llama.cpp with `-DGGML_METAL=ON`; runtime device auto-detected (MPS → CUDA → CPU) by `src/device.py`, batch sizes adapted to RAM (`sysctl -n hw.memsize`; < 32 GB ⇒ fp16/GPTQ artifacts must be fetched from the cluster, not built locally).
+- Mac (Apple Silicon): `pip install torch` (MPS build); llama.cpp with `-DGGML_METAL=ON`; runtime device auto-detected (MPS → CUDA → CPU) by `src/common/device.py`, batch sizes adapted to RAM (`sysctl -n hw.memsize`; < 32 GB ⇒ fp16/GPTQ artifacts must be fetched from the cluster, not built locally).
 - Platform split (MUST NOT drift): GGUF uniform + layerwise run on BOTH platforms; SmoothQuant quality eval runs on both (fake-quant), its real-kernel throughput only on cluster; GPTQ quantization + LLM.int8 are cluster-only (GPTQ artifacts rsync'd to Mac for eval); scoring (sacrebleu/chrF/XCOMET-XL/MetricX) runs on both (smaller batch on Mac).
-- Artifact sync: `src/sync.sh` (rsync of `models/`, `outputs/`, `scores/` keyed by run_id) keeps both environments coherent; every ledger row records `platform` and `job_id`.
+- Artifact sync: `src/common/sync.sh` (rsync of `models/`, `outputs/`, `scores/` keyed by run_id) keeps both environments coherent; every ledger row records `platform` and `job_id`.
 - HF login required for gated assets (XCOMET-XL license; FLORES family variants); token at `~/.cache/huggingface/token`.
 - Pin versions: commit `env/requirements-lock-slurm.txt` + `env/requirements-lock-mac.txt` (pip freeze after every env change).
 

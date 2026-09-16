@@ -7,12 +7,12 @@ averages. Runs on both platforms (smaller batch on Mac).
 spBLEU: sacrebleu with tokenize='spm' + 'flores200' model (mirrors ALMA evals
 which use TOK=13a for most pairs; FLORES uses spm). chrF++ chrF.word_order=2.
 
-XCOMET-XL: unbabel-comet >= 2.2 (ref-based), device from src/device.py.
+XCOMET-XL: unbabel-comet >= 2.2 (ref-based), device from src/common/device.py.
 MetricX: google-research/metricx repo predict.py; inputs jsonl
 source/hypothesis/reference; prediction in [0,25] lower=better.
 
 Usage:
-  python src/score.py --run-id <id> --direction en-de \
+  python src/eval/score.py --run-id <id> --direction en-de \
       --src data/flores/en-de/src.txt --mt outputs/<id>/en-de/mt.txt \
       --ref data/flores/en-de/ref.txt --out scores/<id>/en-de.json \
       [--metrics spbleu,chrf,xcomet,metricx] [--metricx-py vendor/metricx/metricx24/predict.py]
@@ -26,8 +26,8 @@ import subprocess
 import sys
 import tempfile
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from device import max_batch, device_name, platform_tag  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from common.device import max_batch, device_name, platform_tag  # noqa: E402
 
 
 def read_lines(p: str) -> list[str]:

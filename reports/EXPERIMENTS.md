@@ -13,7 +13,7 @@ Every run also appends a row to `experiments/ledger.jsonl`.
 | M3 X-ALMA number reproduction | pending | needs FP16 generations. |
 | M4 quantization (4 kinds x grid) | GGUF path started (G1) | GPTQ/LLM.int8 cluster-only. |
 | M5 full matrix gen + scoring + efficiency | pending | needs cluster for full matrix. |
-| M6 degradation curves + final report | pending | `src/analyze.py` ready. |
+| M6 degradation curves + final report | pending | `src/eval/analyze.py` ready. |
 
 ## Findings
 
@@ -33,7 +33,7 @@ Evidence (shard `model-00006-of-00006.safetensors`, layer 38):
 equal base + group LoRA exactly where LoRA applies and are byte-identical
 elsewhere. ⇒ the repo already materialises the paper's *loading strategy 2*
 (merged dense per group). **Impact:** Phase 2's `merge_and_unload` per group is
-redundant; dense fp16 per group is fetched directly. `src/merge_xalma.py` is
+redundant; dense fp16 per group is fetched directly. `src/model/merge_xalma.py` is
 kept as the verification/fallback path (base + adapter → merge) if a per-group
 cross-check is ever wanted on the cluster.
 
@@ -41,7 +41,7 @@ cross-check is ever wanted on the cluster.
 Homebrew llama.cpp build `b10150-dee2a846b`: `--no-cnv`/`-no-cnv` still drops
 into an interactive stdin REPL that never exits (prints `>` forever); the
 documented `-st, --single-turn` with a predefined `-p` prompt exits cleanly
-after one generation. **Impact:** `src/generate_gguf.py` uses `-st`; GGUF rows
+after one generation. **Impact:** `src/model/generate_gguf.py` uses `-st`; GGUF rows
 are greedy (`--temp 0`) because this build exposes no beam search — protocol-
 labelled `num_beams=1`, never merged naively with HF beam-5 rows.
 

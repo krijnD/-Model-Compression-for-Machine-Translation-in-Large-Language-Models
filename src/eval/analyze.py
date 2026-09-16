@@ -11,7 +11,7 @@
 - Tables: per metric kind x variant x tier mean Delta; efficiency per run_id.
 
 Usage:
-  python src/analyze.py [--ledger experiments/ledger.jsonl]
+  python src/eval/analyze.py [--ledger experiments/ledger.jsonl]
                         [--scores-dir scores] [--out reports]
 """
 from __future__ import annotations
@@ -23,7 +23,7 @@ import os
 import sys
 from collections import defaultdict
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # resource tiers for our eval langs (high / mid / low + script diversity)
 TIER = {"de": "high", "is": "mid", "fr": "high", "mg": "low",

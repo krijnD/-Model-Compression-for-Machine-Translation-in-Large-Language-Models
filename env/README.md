@@ -1,6 +1,6 @@
 # Environment Setup & Access Notes
 
-Two environments: **Slurm NVIDIA cluster** (primary full-matrix runner) and **M2 Pro Mac** (secondary runner). Both share the same repo; heavy artifacts live under `models/`, `data/`, `outputs/`, `scores/` (gitignored) and are kept coherent via `src/sync.sh`.
+Two environments: **Slurm NVIDIA cluster** (primary full-matrix runner) and **M2 Pro Mac** (secondary runner). Both share the same repo; heavy artifacts live under `models/`, `data/`, `outputs/`, `scores/` (gitignored) and are kept coherent via `src/common/sync.sh`.
 
 ## Building the environments
 
@@ -18,17 +18,17 @@ env/setup_slurm.sh        # conda env 'almaq' (python 3.11), CUDA torch, llama.c
 Gate: interactive GPU node runs `nvidia-smi` and `python -c "import torch; print(torch.cuda.get_device_name(0))"`.
 
 ## Runtime device selection
-`src/device.py` picks `mps → cuda → cpu` automatically and caps batch size by RAM:
+`src/common/device.py` picks `mps → cuda → cpu` automatically and caps batch size by RAM:
 - `ram >= 32 GB` → `max_batch=32`, `can_fp16=True` (Mac M2 Pro here: 32 GB → fp16 allowed on MPS)
 - `ram < 32 GB` → `max_batch=8`, `can_fp16=False` → fp16/GPTQ artifacts must be fetched from the cluster
 
 ## Artifact sync between Mac and cluster
-`src/sync.sh` (rsync over ssh, keyed by run_id):
+`src/common/sync.sh` (rsync over ssh, keyed by run_id):
 ```bash
-src/sync.sh pull-run <run_id>   # cluster -> Mac  (models/, outputs/, scores/)
-src/sync.sh push-run <run_id>   # Mac -> cluster
+src/common/sync.sh pull-run <run_id>   # cluster -> Mac  (models/, outputs/, scores/)
+src/common/sync.sh push-run <run_id>   # Mac -> cluster
 ```
-Requires passwordless ssh to the cluster host. Cluster host/user/path are configured at the top of `src/sync.sh`
+Requires passwordless ssh to the cluster host. Cluster host/user/path are configured at the top of `src/common/sync.sh`
 after the authorized access decision.
 
 ## HF login

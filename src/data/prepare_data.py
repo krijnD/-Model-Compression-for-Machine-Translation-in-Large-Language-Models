@@ -16,7 +16,7 @@ Data sources (verified 2026-09-16, all public):
 Writes data/<benchmark>/<direction>/src.txt / ref.txt (one sentence/line).
 
 Usage:
-  python src/prepare_data.py [--bench flores,ntrex,wmt23] [--out data]
+  python src/data/prepare_data.py [--bench flores,ntrex,wmt23] [--out data]
 """
 from __future__ import annotations
 

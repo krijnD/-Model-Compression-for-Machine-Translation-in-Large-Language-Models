@@ -22,7 +22,7 @@ line=$(sed -n "$((SLURM_ARRAY_TASK_ID + 1))p" "$MATRIX_FILE")
 read -r RUN_ID MODEL DIRECTION <<<"$line"
 cd "$(dirname "$0")/../.."
 echo "[$(date)] gen $RUN_ID $DIRECTION $MODEL"
-python src/generate.py \
+python src/model/generate.py \
     --model "$MODEL" --run-id "$RUN_ID" --direction "$DIRECTION" \
     --src-file "data/flores/${DIRECTION}/src.txt" \
     --ref-file "data/flores/${DIRECTION}/ref.txt" 2>&1 | tee "logs/gen_${RUN_ID}_${DIRECTION}.log"

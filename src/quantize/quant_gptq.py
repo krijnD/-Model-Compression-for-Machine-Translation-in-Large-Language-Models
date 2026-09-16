@@ -9,7 +9,7 @@ haoranxu/X-ALMA-Parallel-Data, only the languages of the target group
 Output: models/gptq/g{g}/b{bits}/ (safetensors + quantize_config.json).
 
 Usage:
-  python src/quant_gptq.py --model models/merged/g1 --bits 4 \
+  python src/quantize/quant_gptq.py --model models/merged/g1 --bits 4 \
       --out models/gptq/g1/b4 --calib-langs de,is
 """
 from __future__ import annotations

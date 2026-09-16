@@ -10,7 +10,7 @@ Decode (AGENTS.md): ALMA prompt, num_beams=5, max_new_tokens=256,
 max_source_length=256, seed 42.
 
 Usage:
-  python src/generate.py --model <artifact|hf-id> --run-id <id>
+  python src/model/generate.py --model <artifact|hf-id> --run-id <id>
       --direction en-de --src-file data/flores/en-de/src.txt
       [--ref-file ...] [--load-mode fp16|gptq|int8|torchao] [--out outputs]
       [--batch-size N] [--num-beams 5] [--max-new-tokens 256]
@@ -27,8 +27,8 @@ from datetime import datetime, timezone
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, GPTQConfig
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from device import device, device_name, max_batch, platform_tag  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from common.device import device, device_name, max_batch, platform_tag  # noqa: E402
 
 # ALMA language names (full names per fe1ixxu/ALMA run_llmmt.py mapping).
 LANG_NAMES = {
@@ -41,7 +41,7 @@ LANG_NAMES = {
 def alma_prompt(src_lang: str, tgt_lang: str, sentence: str) -> str:
     s, t = LANG_NAMES[src_lang], LANG_NAMES[tgt_lang]
     return (f"Translate this from {s} into {t}:\n"
-            f"{s}: {sentence}\n{T}:")
+            f"{s}: {sentence}\n{t}:")
 
 
 def postprocess(text: str) -> str:

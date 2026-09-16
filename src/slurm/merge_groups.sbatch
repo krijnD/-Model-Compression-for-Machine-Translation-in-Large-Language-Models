@@ -18,5 +18,5 @@ conda activate almaq 2>/dev/null || source "$(dirname "$0")/../../env/.venv-alma
 g=$SLURM_ARRAY_TASK_ID
 cd "$(dirname "$0")/../.."
 echo "[$(date)] merging group $g"
-python src/merge_xalma.py --groups "$g" --out-dir models/merged 2>&1 | tee "logs/merge_g${g}.log"
+python src/model/merge_xalma.py --groups "$g" --out-dir models/merged 2>&1 | tee "logs/merge_g${g}.log"
 echo "[$(date)] done group $g"

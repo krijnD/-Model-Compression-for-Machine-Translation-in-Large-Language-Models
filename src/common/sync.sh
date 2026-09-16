@@ -6,19 +6,19 @@
 # authorized-access decision by the user. No remote host is hardcoded yet.
 #
 # Usage:
-#   src/sync.sh pull-run <run_id>     cluster -> local
-#   src/sync.sh push-run <run_id>     local -> cluster
-#   src/sync.sh pull-all              cluster -> local (models/, outputs/, scores/)
+#   src/common/sync.sh pull-run <run_id>     cluster -> local
+#   src/common/sync.sh push-run <run_id>     local -> cluster
+#   src/common/sync.sh pull-all              cluster -> local (models/, outputs/, scores/)
 set -euo pipefail
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # --- configure after access decision -------------------------------------------
 CLUSTER_HOST="${CLUSTER_HOST:-}"   # e.g. "user@login.cluster.org"
 CLUSTER_PATH="${CLUSTER_PATH:-}"   # e.g. "~/model-compression/"
 # --------------------------------------------------------------------------------
 
-[ -n "$CLUSTER_HOST" ] || { echo "ERROR: CLUSTER_HOST not configured in src/sync.sh (pending access decision)."; exit 2; }
-[ -n "$CLUSTER_PATH" ] || { echo "ERROR: CLUSTER_PATH not configured in src/sync.sh."; exit 2; }
+[ -n "$CLUSTER_HOST" ] || { echo "ERROR: CLUSTER_HOST not configured in src/common/sync.sh (pending access decision)."; exit 2; }
+[ -n "$CLUSTER_PATH" ] || { echo "ERROR: CLUSTER_PATH not configured in src/common/sync.sh."; exit 2; }
 
 cmd="${1:-}"
 run="${2:-}"

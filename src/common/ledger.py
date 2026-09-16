@@ -16,7 +16,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-LEDGER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+LEDGER = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
                       "experiments", "ledger.jsonl")
 
 

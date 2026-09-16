@@ -28,7 +28,7 @@ for d in "${DIRECTIONS[@]}"; do
 set -euo pipefail
 source "\$(conda info --base)/etc/profile.d/conda.sh" 2>/dev/null || true
 conda activate almaq 2>/dev/null || source env/.venv-almaq/bin/activate
-python src/score.py --run-id "$RUN_ID" --direction "$d" \
+python src/eval/score.py --run-id "$RUN_ID" --direction "$d" \
   --src "data/flores/$d/src.txt" \
   --mt "outputs/$RUN_ID/$d/mt.txt" \
   --ref "data/flores/$d/ref.txt" \

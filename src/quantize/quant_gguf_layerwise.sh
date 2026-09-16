@@ -7,8 +7,9 @@
 # Untouched tensors (incl. norms) stay F32.
 #
 # Usage:
-#   src/quant_gguf_layerwise.sh <f16.gguf> <out-dir> [A|B]
+#   src/quantize/quant_gguf_layerwise.sh <f16.gguf> <out-dir> [A|B]
 set -euo pipefail
+cd "$(dirname "$0")/../.."
 src_gguf="${1:?f16 gguf}"
 out="${2:?out dir}"
 variant="${3:-A}"

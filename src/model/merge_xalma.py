@@ -8,12 +8,12 @@ Paper-supported loading strategy 2 (arXiv 2410.03115). Dense fp16 per group,
 same parameter count as the base model.
 
 Usage:
-  python src/merge_xalma.py [--groups 1 2 3 ...] [--out-dir models/merged]
+  python src/model/merge_xalma.py [--groups 1 2 3 ...] [--out-dir models/merged]
                             [--base haoranxu/X-ALMA-13B-Pretrain]
                             [--temp-dir <path>]   # RAM-starved CPUs: temp offload
 
 Run on the Slurm cluster (13B fp16 ~= 26 GB). On a Mac with < 32 GB RAM this
-is infeasible — models must be fetched via src/sync.sh instead.
+is infeasible — models must be fetched via src/common/sync.sh instead.
 """
 from __future__ import annotations
 

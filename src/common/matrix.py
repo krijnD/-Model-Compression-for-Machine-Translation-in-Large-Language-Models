@@ -12,9 +12,9 @@ Kinds and variants (AGENTS.md §2):
   layerwise : het_q8q4, het_q8q2q3
 
 Usage:
-  python src/matrix.py --groups 1                  # list run_ids for group 1
-  python src/matrix.py --groups 1 --format tsv     # run_id<TAB>kind<TAB>artifact<TAB>load_mode
-  python src/matrix.py --groups 1 --emit-sbatch src/slurm/generate.sbatch > commands.sh
+  python src/common/matrix.py --groups 1                  # list run_ids for group 1
+  python src/common/matrix.py --groups 1 --format tsv     # run_id<TAB>kind<TAB>artifact<TAB>load_mode
+  python src/common/matrix.py --groups 1 --emit-sbatch src/slurm/generate.sbatch > commands.sh
 """
 from __future__ import annotations
 

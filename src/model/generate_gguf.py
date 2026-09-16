@@ -8,7 +8,7 @@ num_beams=1 (greedy) vs HF rows num_beams=5 — never merged naively.
 Writes outputs/<run_id>/<direction>/{mt.txt,tokens.json} + timing.
 
 Usage:
-  python src/generate_gguf.py --model models/gguf/g1/q4_k_m.gguf --run-id gguf_q4_g1 \
+  python src/model/generate_gguf.py --model models/gguf/g1/q4_k_m.gguf --run-id gguf_q4_g1 \
       --direction en-de --src-file data/flores/en-de/src.txt [--threads N] [--jobs P]
 """
 from __future__ import annotations
@@ -23,8 +23,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from device import platform_tag  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from common.device import platform_tag  # noqa: E402
 
 LANG_NAMES = {
     "en": "English", "de": "German", "is": "Icelandic", "fr": "French",

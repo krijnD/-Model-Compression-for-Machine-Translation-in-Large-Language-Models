@@ -9,7 +9,7 @@ token (CUDA events on cuda; perf_counter on mps/cpu). Writes
 scores/<run_id>/efficiency.json with 'platform' field.
 
 Usage:
-  python src/efficiency.py --model <artifact|hf-id> --run-id <id>
+  python src/eval/efficiency.py --model <artifact|hf-id> --run-id <id>
       [--directions en-de en-zh en-mg] [--n 50] [--load-mode fp16|gptq|int8|torchao]
 """
 from __future__ import annotations
@@ -23,9 +23,9 @@ import time
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from device import device, device_name, max_batch, platform_tag  # noqa: E402
-from generate import alma_prompt  # noqa: E402 (same prompt contract)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from common.device import device, device_name, max_batch, platform_tag  # noqa: E402
+from model.generate import alma_prompt  # noqa: E402 (same prompt contract)
 
 
 def load_model(artifact: str, mode: str):

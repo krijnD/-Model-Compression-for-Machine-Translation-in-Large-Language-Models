@@ -2,9 +2,10 @@
 # GGUF quantization: uniform bit sweep per group. Runs on BOTH platforms.
 #
 # Usage:
-#   src/quant_gguf.sh <group> <f16.gguf> <out-dir>
-#   e.g. src/quant_gguf.sh 1 models/gguf/g1/f16.gguf models/gguf/g1
+#   src/quantize/quant_gguf.sh <group> <f16.gguf> <out-dir>
+#   e.g. src/quantize/quant_gguf.sh 1 models/gguf/g1/f16.gguf models/gguf/g1
 set -euo pipefail
+cd "$(dirname "$0")/../.."
 group="${1:?group 1..8}"
 src_gguf="${2:?path to f16 gguf}"
 out="${3:?out dir}"

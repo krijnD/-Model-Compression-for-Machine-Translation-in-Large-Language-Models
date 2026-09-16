@@ -3,11 +3,11 @@
 # Protocol: warmup-excluded throughput at batch sizes 1/16/64, prompt 512,
 # generation 128. Writes scores/<run_id>/efficiency_gguf.json.
 #
-# Usage: src/efficiency_gguf.sh <run_id> <model.gguf> [platform]
+# Usage: src/eval/efficiency_gguf.sh <run_id> <model.gguf> [platform]
 set -euo pipefail
 RUN_ID="${1:?run_id}"
 MODEL="${2:?model.gguf}"
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
 NGL=999
 if [ "$(uname -s)" = "Darwin" ]; then NGL=99; fi
