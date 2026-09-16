@@ -1,0 +1,12 @@
+Fetching 17 files:   0%|          | 0/17 [00:00<?, ?it/s]Downloading 'model-00004-of-00006.safetensors' to 'models/x-alma-13b-pretrain/.cache/huggingface/download/71f3TSsxAmosSx1AFSGJtFrSxfc=.d6f98f1e05403b1b7a01cdeebcfc9d879fcb755bd221e03e83de3765b6e0a951.incomplete' (resume from 268225416/4933701504)
+Downloading 'model-00001-of-00006.safetensors' to 'models/x-alma-13b-pretrain/.cache/huggingface/download/lPnGVsdaF542Y6w1ufNAL-pphxo=.9839cbd2affeebab9042a536c75f57b6d8e9b7555dea21b3545ee23b23666f2e.incomplete'
+Downloading 'tokenizer.model' to 'models/x-alma-13b-pretrain/.cache/huggingface/download/7iVfz3cUOMr-hyjiqqRDHEwVBAM=.7aedb3582ecda9fa99ee9242c17a9658f6744db083ee6ebdc8fb14857f84d220.incomplete'
+Downloading 'model-00005-of-00006.safetensors' to 'models/x-alma-13b-pretrain/.cache/huggingface/download/oSetzz1DFkf7L3TvpxdZ6YtuoKo=.345bc51333cb8a37d90c9ac8efceb0d10725e3c2d5aa6a981176a1ed35e31028.incomplete'
+Downloading 'model-00006-of-00006.safetensors' to 'models/x-alma-13b-pretrain/.cache/huggingface/download/uHlhOCT17Z6wYlt1x1jlrCcHTyE=.c552f0e4538b51a2e43182940c3645ae59ec73012c57152114a3f671e56f4fc8.incomplete'
+Downloading 'model-00003-of-00006.safetensors' to 'models/x-alma-13b-pretrain/.cache/huggingface/download/XYxS_-gMKqyeF0pSwDVvLc_63Nc=.d242b84f5d8a13c401087860d7058e62dcafef5492a143299ee56befaa5b7f92.incomplete'
+Downloading 'trainer_state.json' to 'models/x-alma-13b-pretrain/.cache/huggingface/download/1uiJ87Eu3vvlOlZKj0NZvGlSO3I=.3cc554642165042d2b444533d260e884849dc41cdcca2e387c4792b6abb53d39.incomplete'
+Downloading 'model-00002-of-00006.safetensors' to 'models/x-alma-13b-pretrain/.cache/huggingface/download/H1O8ZB_QwtWjsrLtliP4_68j6q4=.181ae020951c15ad2564b3730b5f81da2fc53dd498540214a7a87749aae1251f.incomplete' (resume from 134045432/4970422232)
+Download complete. Moving file to models/x-alma-13b-pretrain/tokenizer.model
+Fetching 17 files:  59%|█████▉    | 10/17 [00:01<00:00,  8.52it/s]Download complete. Moving file to models/x-alma-13b-pretrain/trainer_state.json
+Fetching 17 files:  65%|██████▍   | 11/17 [00:20<00:10,  1.82s/it]/opt/homebrew/Cellar/python@3.11/3.11.14_3/Frameworks/Python.framework/Versions/3.11/lib/python3.11/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

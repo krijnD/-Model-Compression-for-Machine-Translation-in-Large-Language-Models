@@ -1,0 +1,10 @@
+{
+  "g1": ["da", "nl", "de", "is", "no", "sv", "af"],
+  "g2": ["ca", "ro", "gl", "it", "pt", "es"],
+  "g3": ["bg", "mk", "sr", "uk", "ru"],
+  "g4": ["id", "ms", "th", "vi", "mg", "fr"],
+  "g5": ["hu", "el", "cs", "pl", "lt", "lv"],
+  "g6": ["ka", "zh", "ja", "ko", "fi", "et"],
+  "g7": ["gu", "hi", "mr", "ne", "ur"],
+  "g8": ["az", "kk", "ky", "tr", "uz", "ar", "he", "fa"]
+}

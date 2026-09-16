@@ -1,1 +1,14 @@
 .DS_Store
+__pycache__/
+*.pyc
+env/.venv-almaq/
+models/
+data/
+outputs/
+scores/
+logs/*.out
+logs/*.err
+vendor/
+.reports/plots/tmp/
+reports/curves/*.png
+*.egg-info/
