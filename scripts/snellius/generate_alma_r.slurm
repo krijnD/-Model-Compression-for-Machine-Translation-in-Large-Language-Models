@@ -13,7 +13,10 @@
 set -euo pipefail
 source scripts/snellius/env.sh
 
-MODEL="${MODEL:-haoranxu/ALMA-13B-R}"
+# Local copy of the merged weights WITHOUT the adapter files (see README):
+# loading "haoranxu/ALMA-13B-R" by name makes transformers load ALMA-13B-Pretrain + adapter instead.
+MODEL="${MODEL:-$PROJECT_DIR/models/ALMA-13B-R}"
+[ -f "$MODEL/adapter_config.json" ] && { echo "ERROR: $MODEL contains adapter_config.json; remove adapter_* files"; exit 1; }
 OUT="${OUT:-$OUTPUT_ROOT/alma-13b-r/wmt22}"
 NGPUS="${SLURM_GPUS_ON_NODE:-1}"
 PORT=$(( RANDOM % 20001 + 30000 ))
