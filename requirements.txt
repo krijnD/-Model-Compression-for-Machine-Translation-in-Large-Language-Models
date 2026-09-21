@@ -1,0 +1,15 @@
+# One environment for all evaluation metrics.
+# Hallucination rate needs no package (own code).
+
+# BLEU + chrF++
+sacrebleu>=2.4,<3.0
+
+# XCOMET-XL (weights: Unbabel/XCOMET-XL on Hugging Face, gated)
+unbabel-comet==2.2.7
+
+# MetricX-24 (code: third_party/metricx submodule, run as `python -m metricx24.predict`).
+# Its own requirements.txt pins transformers==4.30.2 / datasets==2.13.1; we use newer
+# versions that COMET also accepts. transformers must stay <5 (MetricX uses MT5 internals).
+transformers[torch]>=4.46,<5.0
+sentencepiece>=0.2.0,<0.3.0
+datasets>=2.19
