@@ -1,15 +1,25 @@
-# One environment for all evaluation metrics.
+# One environment for ALMA-R generation and all evaluation metrics.
 # Hallucination rate needs no package (own code).
 
-# BLEU + chrF++
+# --- ALMA-R generation (code: third_party/ALMA submodule, run_llmmt.py) ---
+# Versions follow third_party/ALMA/install_alma.sh. deepspeed/trl/wandb are
+# only needed for training, not for generation, so they are left out.
+transformers[torch]==4.51.1
+accelerate==0.34.2
+peft==0.13.0
+datasets>=2.19
+evaluate
+jsonlines
+einops
+zstandard
+sentencepiece>=0.2.0,<0.3.0
+
+# --- BLEU + chrF++ ---
 sacrebleu>=2.4,<3.0
 
-# XCOMET-XL (weights: Unbabel/XCOMET-XL on Hugging Face, gated)
+# --- XCOMET-XXL (weights: Unbabel/XCOMET-XXL on Hugging Face, gated) ---
 unbabel-comet==2.2.7
 
-# MetricX-24 (code: third_party/metricx submodule, run as `python -m metricx24.predict`).
-# Its own requirements.txt pins transformers==4.30.2 / datasets==2.13.1; we use newer
-# versions that COMET also accepts. transformers must stay <5 (MetricX uses MT5 internals).
-transformers[torch]>=4.46,<5.0
-sentencepiece>=0.2.0,<0.3.0
-datasets>=2.19
+# --- MetricX-24 (code: third_party/metricx submodule, `python -m metricx24.predict`) ---
+# Its own requirements pin transformers==4.30.2; it also runs on the 4.51.1 above
+# (the MT5 internals it uses are unchanged). No extra packages needed.
