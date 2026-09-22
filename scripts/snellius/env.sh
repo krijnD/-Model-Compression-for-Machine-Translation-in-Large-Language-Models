@@ -16,3 +16,19 @@ export HF_HOME="${HF_HOME:-$PROJECT_DIR/hf_cache}"
 
 OUTPUT_ROOT="$PROJECT_DIR/outputs"
 WMT22_PAIRS="de-en,cs-en,is-en,zh-en,ru-en,en-de,en-cs,en-is,en-zh,en-ru"
+
+# Which translations to score (same mapping in scripts/score_lexical.py):
+#   paper = the paper's ALMA-13B-R outputs, ours = our run with paper decoding, ours-beam = plain beam search
+RUN="${RUN:-ours}"
+TESTSET="$REPO_DIR/third_party/ALMA/outputs/wmt22_outputs/wmt-testset"
+src_path() { local s=${1%-*} t=${1#*-}; echo "$TESTSET/$s$t/test.$s-$t.$s"; }
+ref_path() { local s=${1%-*} t=${1#*-}; echo "$TESTSET/$s$t/test.$s-$t.$t"; }
+hyp_path() {
+  local s=${1%-*} t=${1#*-}
+  case "$RUN" in
+    paper)     echo "$REPO_DIR/third_party/ALMA/outputs/wmt22_outputs/ALMA-13B-R/$s$t/test.$s-$t.$t" ;;
+    ours)      echo "$OUTPUT_ROOT/alma-13b-r/wmt22/test-$s-$t" ;;
+    ours-beam) echo "$OUTPUT_ROOT/alma-13b-r-beam/wmt22/test-$s-$t" ;;
+    *) echo "ERROR: unknown RUN=$RUN" >&2; return 1 ;;
+  esac
+}

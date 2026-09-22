@@ -3,12 +3,14 @@
 #SBATCH --partition=gpu_h100
 #SBATCH --gpus-per-node=4
 #SBATCH --cpus-per-task=64
-#SBATCH --time=04:00:00
+#SBATCH --time=08:00:00
 #SBATCH --output=slurm-%x-%j.out
 
 # Generate WMT'22 (WMT'21 for is) translations with ALMA-13B-R, using the exact
 # settings of third_party/ALMA/evals/alma_13b_r.sh.
-# Override with: sbatch --export=ALL,MODEL=/path/to/weights,OUT=/path scripts/snellius/generate_alma_r.slurm
+#   DECODING=paper : beam 5 + the model's generation_config (do_sample, temp 0.9, top_p 0.6), as in the paper (default)
+#   DECODING=beam  : plain beam search, do_sample=False (deterministic)
+# Override with: sbatch --export=ALL,DECODING=beam,MODEL=/path/to/weights,OUT=/path scripts/snellius/generate_alma_r.slurm
 
 set -euo pipefail
 source scripts/snellius/env.sh
@@ -17,7 +19,29 @@ source scripts/snellius/env.sh
 # loading "haoranxu/ALMA-13B-R" by name makes transformers load ALMA-13B-Pretrain + adapter instead.
 MODEL="${MODEL:-$PROJECT_DIR/models/ALMA-13B-R}"
 [ -f "$MODEL/adapter_config.json" ] && { echo "ERROR: $MODEL contains adapter_config.json; remove adapter_* files"; exit 1; }
-OUT="${OUT:-$OUTPUT_ROOT/alma-13b-r/wmt22}"
+DECODING="${DECODING:-paper}"
+case "$DECODING" in
+  paper) OUT="${OUT:-$OUTPUT_ROOT/alma-13b-r/wmt22}" ;;
+  beam)  OUT="${OUT:-$OUTPUT_ROOT/alma-13b-r-beam/wmt22}"
+         # run_llmmt.py has no do_sample flag and generate() falls back to the model's
+         # generation_config, so point it at a copy of the model folder (symlinks) whose
+         # generation_config has sampling switched off.
+         BEAM_MODEL="$(mktemp -d)"
+         ln -s "$MODEL"/* "$BEAM_MODEL"/
+         rm "$BEAM_MODEL/generation_config.json"
+         python - "$MODEL/generation_config.json" "$BEAM_MODEL/generation_config.json" <<'EOF'
+import json, sys
+cfg = json.load(open(sys.argv[1]))
+cfg["do_sample"] = False
+cfg.pop("temperature", None); cfg.pop("top_p", None)
+json.dump(cfg, open(sys.argv[2], "w"), indent=2)
+EOF
+         MODEL="$BEAM_MODEL" ;;
+  *) echo "ERROR: DECODING must be paper or beam"; exit 1 ;;
+esac
+echo "Decoding: $DECODING | model: $MODEL | output: $OUT"
+cat "$MODEL/generation_config.json"
+
 NGPUS="${SLURM_GPUS_ON_NODE:-1}"
 PORT=$(( RANDOM % 20001 + 30000 ))
 MULTI_GPU=""; [ "$NGPUS" -gt 1 ] && MULTI_GPU="--multi_gpu"
@@ -46,7 +70,21 @@ generate() {  # $1 = language pairs, $2 = max_source_length
     --overwrite_output_dir
 }
 
-generate "$WMT22_PAIRS" 256
-generate "zh-en" 512   # as in the paper: zh-en is regenerated with longer sources
+# The paper also translates zh-en in the first call and then overwrites it with
+# source length 512; skipping it here gives the same file and saves ~10% time.
+generate "${WMT22_PAIRS/zh-en,/}" 256
+generate "zh-en" 512
 
+# Check: one translation per source line, and count empty translations
+# (run_llmmt.py writes an empty line when it can't extract a translation).
+status=0
+printf "%-6s %7s %7s %6s\n" pair sources hyps empty
+for pair in ${WMT22_PAIRS//,/ }; do
+  hyp="$OUT/test-${pair}"
+  n_src=$(awk 'END{print NR}' "$(src_path "$pair")")
+  read -r n_hyp n_empty < <( [ -f "$hyp" ] && awk 'NF==0{e++} END{print NR, e+0}' "$hyp" || echo "0 0")
+  flag=""; [ "$n_src" -ne "$n_hyp" ] && { flag="  <-- MISMATCH"; status=1; }
+  printf "%-6s %7s %7s %6s%s\n" "$pair" "$n_src" "$n_hyp" "$n_empty" "$flag"
+done
 echo "Translations written to $OUT (files test-<src>-<tgt>)"
+exit $status

@@ -14,7 +14,9 @@ External code is included as git submodules in `third_party/`:
 | chrF++ | [`sacrebleu`](https://github.com/mjpost/sacrebleu) (`CHRF(word_order=2)`) | pip |
 | XCOMET-XXL | [`unbabel-comet`](https://github.com/Unbabel/COMET), model [`Unbabel/XCOMET-XXL`](https://huggingface.co/Unbabel/XCOMET-XXL), as used in the ALMA-R paper | pip, plus the HF license |
 | MetricX-24 Hybrid | [`google-research/metricx`](https://github.com/google-research/metricx), model [`google/metricx-24-hybrid-xl-v2p6`](https://huggingface.co/google/metricx-24-hybrid-xl-v2p6) | git submodule `third_party/metricx` (not on PyPI) plus pip deps |
-| Hallucination rate | own code (length ratio of candidate to source, in characters, >= 2) | nothing |
+| Hallucination rate | own code (`scripts/score_lexical.py`): % of sentences where the candidate is at least 2× as long as the **reference**, in characters. A source-based ratio would flag almost all zh→en sentences. | nothing |
+
+The ALMA-R paper also reports **COMET-22** (`Unbabel/wmt22-comet-da`), **KIWI-22** (`Unbabel/wmt22-cometkiwi-da`) and **KIWI-XXL** (`Unbabel/wmt23-cometkiwi-da-xxl`). We compute them too (same `unbabel-comet` package) so we can compare with the paper on every metric.
 
 Model weights are **not** installed by pip. They download from Hugging Face the first time a model is used.
 
@@ -27,7 +29,8 @@ The venv, data and model weights live **next to** the repo, not inside it:
 ├── Model-Compression-MT/   # this repo (code only)
 ├── venv/                   # Python environment
 ├── data/                   # datasets
-├── hf_cache/               # Hugging Face models (HF_HOME)
+├── hf_cache/               # Hugging Face models for the metrics (HF_HOME)
+├── models/                 # LLM weights we translate with / quantize (ALMA-13B-R)
 └── outputs/                # translations and scores written by the jobs
 ```
 
@@ -58,7 +61,7 @@ pip install -r requirements.txt
 
 ### 3. Hugging Face setup (once)
 
-1. Log in on huggingface.co and **accept the license** on the [Unbabel/XCOMET-XXL](https://huggingface.co/Unbabel/XCOMET-XXL) page. The model is gated.
+1. Log in on huggingface.co and **accept the license** on the [Unbabel/XCOMET-XXL](https://huggingface.co/Unbabel/XCOMET-XXL), [Unbabel/wmt23-cometkiwi-da-xxl](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) and [Unbabel/wmt22-cometkiwi-da](https://huggingface.co/Unbabel/wmt22-cometkiwi-da) pages. These models are gated.
 2. Point the model cache at `hf_cache/` next to the repo. Otherwise it goes to `~/.cache/huggingface` in your home folder. Use the absolute path, and put this in `~/.bashrc` **and** in every Slurm job script:
    ```bash
    export HF_HOME=<project dir>/hf_cache
@@ -71,13 +74,33 @@ pip install -r requirements.txt
 Compute nodes may not have internet access. If so, download the models once from the login node (they go into `HF_HOME`):
 
 ```bash
-python -c "from huggingface_hub import snapshot_download as d; d('haoranxu/ALMA-13B-R')"
-python -c "from comet import download_model; download_model('Unbabel/XCOMET-XXL')"
+python -c "from comet import download_model as d; [d(m) for m in ['Unbabel/XCOMET-XXL', 'Unbabel/wmt23-cometkiwi-da-xxl', 'Unbabel/wmt22-cometkiwi-da', 'Unbabel/wmt22-comet-da']]"
 python -c "from huggingface_hub import snapshot_download as d; d('google/metricx-24-hybrid-xl-v2p6')"
 python -c "from transformers import AutoTokenizer; AutoTokenizer.from_pretrained('google/mt5-xl')"   # tokenizer only
+python -c "import evaluate; evaluate.load('sacrebleu')"   # run_llmmt.py loads this at startup
 ```
 
-### 4. Quick checks
+This is a lot of disk space in your home folder: XCOMET-XXL and KIWI-XXL take about 43 GB each, ALMA-13B-R 26 GB. Check with `myquota`.
+
+### 4. Download ALMA-13B-R
+
+Download it into `<project dir>/models/ALMA-13B-R`, **not** into the HF cache, and **without the adapter files**. Run this from the repo root on the login node:
+
+```bash
+source scripts/snellius/env.sh
+python -c "
+from huggingface_hub import snapshot_download
+snapshot_download('haoranxu/ALMA-13B-R',
+                  revision='831d20301232e54f96c2c9af245ea219f85786d0',
+                  local_dir='$PROJECT_DIR/models/ALMA-13B-R',
+                  ignore_patterns=['adapter_*'])
+"
+ls $PROJECT_DIR/models/ALMA-13B-R   # 6 model-*.safetensors files, no adapter_*
+```
+
+Why: the `haoranxu/ALMA-13B-R` repo holds two things, the **merged ALMA-13B-R weights** (`model-*.safetensors`, 26 GB, fp16) and a stray `adapter_config.json`. When peft is installed (it is), `from_pretrained("haoranxu/ALMA-13B-R")` sees that adapter file and silently loads **`ALMA-13B-Pretrain` + adapter** instead. `ALMA-13B-Pretrain` isn't a translation model, so you'd get the wrong model. Leaving out `adapter_*` and loading from the local folder avoids this. The revision pins the exact version of the weights.
+
+### 5. Quick checks
 
 ```bash
 source ../venv/bin/activate
@@ -86,39 +109,56 @@ sacrebleu --help | head -n 3
 cd third_party/metricx && python -c "import metricx24.models; print('metricx ok')" && cd -
 ```
 
-## Reproducing the ALMA-13B-R baseline (XCOMET-XXL)
+## Reproducing the ALMA-13B-R baseline
 
-Goal: reproduce the ALMA-13B-R XCOMET scores from the ALMA-R paper ([Xu et al. 2024](https://arxiv.org/abs/2401.08417), Tables 3 and 4) before quantizing.
+Our full-precision baseline is a reproduction of the ALMA-R paper ([Xu et al. 2024](https://arxiv.org/abs/2401.08417)), scored with the paper's metrics plus ours. Paper numbers for ALMA-13B-R (Tables 9 and 10), averaged over de, cs, is, zh, ru:
 
-| | de | cs | is | zh | ru | **Avg** |
-|---|---|---|---|---|---|---|
-| en→xx | 97.48 | 93.61 | 91.93 | 92.03 | 95.22 | **94.05** |
-| xx→en | 94.20 | 88.03 | 80.49 | 91.65 | 91.18 | **89.11** |
+| | BLEU | COMET-22 | KIWI-22 | KIWI-XXL | XCOMET-XXL |
+|---|---|---|---|---|---|
+| en→xx | 27.03 | 87.74 | 83.34 | 85.74 | 94.05 |
+| xx→en | 35.45 | 85.21 | 81.33 | 82.43 | 89.11 |
 
-**Paper setup:**
+The per-direction numbers are in `scripts/summarize.py`.
+
+**Paper setup** (`third_party/ALMA/evals/alma_13b_r.sh` and `eval_generation.sh`):
 - **Test data:** WMT'22 for de, cs, zh and ru; WMT'21 for is. The files are in `third_party/ALMA/human_written_data/` and `third_party/ALMA/outputs/wmt22_outputs/wmt-testset/`.
-- **Generation:** beam 5, bf16, seed 42, max 256 new tokens; source length 256, or 512 for zh→en.
-- **Scoring:** `Unbabel/XCOMET-XXL` without a reference, reported × 100.
+- **Generation:** beam 5, bf16, seed 42, max 256 new tokens; source length 256, or 512 for zh→en. The script doesn't set `do_sample`, so the model's `generation_config.json` applies (`do_sample=true`, temperature 0.9, top_p 0.6): the paper used beam **sampling**.
+- **Scoring:** BLEU with sacrebleu (tokenizer `zh` for Chinese targets, else `13a`); COMET-22 with a reference; KIWI-22, KIWI-XXL and XCOMET-XXL without one. All × 100.
 
-Submit all jobs **from the repo root**. Results go to `<project dir>/outputs/`.
+**Two generation runs:**
+- `ours`: paper decoding. This is the reproduction, compared with the paper.
+- `ours-beam`: plain beam search (`do_sample=False`), so the output is deterministic. This is the baseline the quantized models are compared against, because with sampling part of any score difference would be sampling noise.
 
-**Step 1: check the metric.** Score the paper's own ALMA-13B-R translations. This should give about 94.05 and 89.11.
+Submit all jobs **from the repo root**. `RUN` selects the translations to score: `paper` (the paper's own outputs), `ours` or `ours-beam`. Scores go to `<project dir>/outputs/<metric>/<RUN>/summary.tsv`.
+
+**Step 1: check the metrics.** Score the paper's own ALMA-13B-R translations. This should reproduce the paper's numbers (XCOMET-XXL is already done: 94.04 / 89.11):
 ```bash
-sbatch --export=ALL,MODE=paper scripts/snellius/score_xcomet.slurm
+sbatch --array=1-3 --export=ALL,RUN=paper scripts/snellius/score_comet.slurm   # 0 xcomet-xxl, 1 kiwi-xxl, 2 kiwi-22, 3 comet-22
+sbatch --export=ALL,RUN=paper scripts/snellius/score_metricx.slurm
+python scripts/score_lexical.py --run paper   # BLEU, chrF++, hallucination rate; seconds, fine on the login node
+python scripts/summarize.py --run paper
 ```
 
-**Step 2: generate.** Translate the test sets with ALMA-13B-R (4× H100, same settings as `third_party/ALMA/evals/alma_13b_r.sh`):
+**Step 2: generate** (4× H100, both jobs can run at the same time). At the end, each job checks that there is one translation per source sentence.
 ```bash
-sbatch scripts/snellius/generate_alma_r.slurm
-# if the weights are in a local folder instead of the HF cache:
-sbatch --export=ALL,MODEL=/path/to/ALMA-13B-R scripts/snellius/generate_alma_r.slurm
+sbatch scripts/snellius/generate_alma_r.slurm                             # -> outputs/alma-13b-r/wmt22
+sbatch --export=ALL,DECODING=beam scripts/snellius/generate_alma_r.slurm  # -> outputs/alma-13b-r-beam/wmt22
+```
+It uses `<project dir>/models/ALMA-13B-R` by default; pass `MODEL=/path` for another folder.
+
+**Step 3: score both runs** (for `RUN=ours` and `RUN=ours-beam`):
+```bash
+sbatch --export=ALL,RUN=ours scripts/snellius/score_comet.slurm
+sbatch --export=ALL,RUN=ours scripts/snellius/score_metricx.slurm
+python scripts/score_lexical.py --run ours
 ```
 
-**Step 3: score our translations.**
+**Step 4: compare.**
 ```bash
-sbatch --export=ALL,MODE=ours scripts/snellius/score_xcomet.slurm
+python scripts/summarize.py --run ours --vs paper   # reproduction: vs the paper's reported numbers and vs the paper's outputs
+python scripts/summarize.py --run ours-beam --vs ours
 ```
-Each run writes `outputs/xcomet-xxl/<mode>/summary.tsv`, with a score per pair and the two averages, plus per-sentence scores and error spans (`<pair>.json`).
+It prints all metrics per direction, the difference with the paper, and writes `outputs/baseline/<RUN>.tsv`.
 
 Follow a job with `squeue -u $USER` and `tail -f slurm-<job-name>-<id>.out`.
 
