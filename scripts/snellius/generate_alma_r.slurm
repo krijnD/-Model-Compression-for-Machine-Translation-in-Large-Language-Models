@@ -4,7 +4,7 @@
 #SBATCH --gpus-per-node=4
 #SBATCH --cpus-per-task=64
 #SBATCH --time=08:00:00
-#SBATCH --output=slurm-%x-%j.out
+#SBATCH --output=logs/slurm-%x-%j.out
 
 # Generate WMT'22 (WMT'21 for is) translations with ALMA-13B-R, using the exact
 # settings of third_party/ALMA/evals/alma_13b_r.sh.

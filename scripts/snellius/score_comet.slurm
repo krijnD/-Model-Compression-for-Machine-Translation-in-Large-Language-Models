@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --time=03:00:00
 #SBATCH --array=0-3
-#SBATCH --output=slurm-%x-%A_%a.out
+#SBATCH --output=logs/slurm-%x-%A_%a.out
 
 # COMET-family metrics of the ALMA-R paper, exactly as third_party/ALMA/evals/eval_generation.sh.
 # One array task per metric: 0 xcomet-xxl, 1 kiwi-xxl, 2 kiwi-22 (no reference), 3 comet-22 (with reference).

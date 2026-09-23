@@ -4,7 +4,7 @@
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --time=03:00:00
-#SBATCH --output=slurm-%x-%j.out
+#SBATCH --output=logs/slurm-%x-%j.out
 
 # MetricX-24 Hybrid XL, reference-based. Lower is better (0-25).
 # Usage: sbatch --export=ALL,RUN=ours scripts/snellius/score_metricx.slurm   (RUN = paper | ours | ours-beam)
