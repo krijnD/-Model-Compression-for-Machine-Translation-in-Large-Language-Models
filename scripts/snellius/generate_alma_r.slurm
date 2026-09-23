@@ -42,6 +42,7 @@ esac
 echo "Decoding: $DECODING | model: $MODEL | output: $OUT"
 cat "$MODEL/generation_config.json"
 
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True   # less fragmentation at long source lengths
 NGPUS="${SLURM_GPUS_ON_NODE:-1}"
 PORT=$(( RANDOM % 20001 + 30000 ))
 MULTI_GPU=""; [ "$NGPUS" -gt 1 ] && MULTI_GPU="--multi_gpu"
@@ -49,7 +50,8 @@ mkdir -p "$OUT"
 
 cd "$REPO_DIR/third_party/ALMA"   # run_llmmt.py expects to run from here
 
-generate() {  # $1 = language pairs, $2 = max_source_length
+generate() {  # $1 = language pairs, $2 = max_source_length, $3 = per-device batch size
+  [ -z "$1" ] && return 0
   accelerate launch $MULTI_GPU --num_processes "$NGPUS" --num_machines 1 \
       --mixed_precision bf16 --main_process_port "$PORT" \
     run_llmmt.py \
@@ -58,7 +60,7 @@ generate() {  # $1 = language pairs, $2 = max_source_length
     --low_cpu_mem_usage \
     --language_pairs "$1" \
     --mmt_data_path ./human_written_data/ \
-    --per_device_eval_batch_size 4 \
+    --per_device_eval_batch_size "$3" \
     --output_dir "$OUT" \
     --predict_with_generate \
     --max_new_tokens 256 \
@@ -72,8 +74,12 @@ generate() {  # $1 = language pairs, $2 = max_source_length
 
 # The paper also translates zh-en in the first call and then overwrites it with
 # source length 512; skipping it here gives the same file and saves ~10% time.
-generate "${WMT22_PAIRS/zh-en,/}" 256
-generate "zh-en" 512
+# zh-en uses a smaller batch: at source length 512, batch 4 x 5 beams runs a 13B
+# model out of memory on a 94 GB H100. Set PAIRS_SHORT="" to redo only zh-en.
+PAIRS_SHORT="${PAIRS_SHORT-${WMT22_PAIRS/zh-en,/}}"
+PAIRS_LONG="${PAIRS_LONG-zh-en}"
+generate "$PAIRS_SHORT" 256 "${BATCH:-4}"
+generate "$PAIRS_LONG" 512 "${BATCH_LONG:-1}"
 
 # Check: one translation per source line, and count empty translations
 # (run_llmmt.py writes an empty line when it can't extract a translation).
