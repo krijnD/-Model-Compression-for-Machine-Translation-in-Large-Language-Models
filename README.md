@@ -146,6 +146,11 @@ sbatch --export=ALL,DECODING=beam scripts/snellius/generate_alma_r.slurm  # -> o
 ```
 It uses `<project dir>/models/ALMA-13B-R` by default; pass `MODEL=/path` for another folder.
 
+zh→en is translated last, with source length 512 and `BATCH_LONG=1` (all other directions use the paper's batch 4). At length 512, batch 4 × 5 beams runs the 13B model out of memory on a 94 GB H100. To redo only zh→en after a crash, keep the other 9 files and pass `PAIRS_SHORT=""`:
+```bash
+sbatch --export=ALL,PAIRS_SHORT= scripts/snellius/generate_alma_r.slurm
+```
+
 **Step 3: score both runs** (for `RUN=ours` and `RUN=ours-beam`):
 ```bash
 sbatch --export=ALL,RUN=ours scripts/snellius/score_comet.slurm
@@ -160,13 +165,13 @@ python scripts/summarize.py --run ours-beam --vs ours
 ```
 It prints all metrics per direction, the difference with the paper, and writes `outputs/baseline/<RUN>.tsv`.
 
-Follow a job with `squeue -u $USER` and `tail -f slurm-<job-name>-<id>.out`.
+Job logs go to `logs/slurm-<job-name>-<id>.out` (gitignored; the folder must exist, Slurm won't create it). Follow a job with `squeue -u $USER` and `tail -f logs/slurm-<job-name>-<id>.out`.
 
 ## Notes
 
 - **Reproducibility:** we don't store weights in git. Instead we record exactly which versions were used: `requirements.txt` for packages, the submodule commits for the ALMA and MetricX code, and the Hugging Face model revision (commit hash) for weights. Look up a revision with `ls $HF_HOME/hub/models--google--metricx-24-hybrid-xl-v2p6/snapshots/` and log it with the results.
 
-- **MetricX and transformers versions:** MetricX's own `requirements.txt` pins `transformers==4.30.2`. We use `4.51.1`, the version ALMA pins, so that ALMA, COMET and MetricX share one env. The MT5 internals MetricX uses are unchanged in that version.
+- **transformers version (4.45.2):** ALMA's `install_alma.sh` pins `4.51.1`, but their own generation code doesn't run on it: `run_llmmt.py` imports `is_torch_tpu_available` (removed after 4.48) and `utils/trainer_llmmt.py` imports `transformers.deepspeed` (removed after 4.45). `4.45.2` is the newest version that has both, and COMET and MetricX work with it as well (MetricX's own requirements pin `4.30.2`, but the MT5 internals it uses are unchanged). One env for everything.
 - **Running MetricX** (from `third_party/metricx`; the input jsonl has the fields `source`, `hypothesis`, `reference`):
   ```bash
   python -m metricx24.predict \

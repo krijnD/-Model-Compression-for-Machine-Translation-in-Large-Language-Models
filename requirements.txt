@@ -2,9 +2,13 @@
 # Hallucination rate needs no package (own code).
 
 # --- ALMA-R generation (code: third_party/ALMA submodule, run_llmmt.py) ---
-# Versions follow third_party/ALMA/install_alma.sh. deepspeed/trl/wandb are
-# only needed for training, not for generation, so they are left out.
-transformers[torch]==4.51.1
+# Versions follow third_party/ALMA/install_alma.sh, EXCEPT transformers: that
+# script pins 4.51.1, but run_llmmt.py does not work with it. It imports
+# is_torch_tpu_available (removed after 4.48) and utils/trainer_llmmt.py imports
+# transformers.deepspeed (removed after 4.45). 4.45.2 is the newest version with
+# both. COMET and MetricX work with it too. deepspeed/trl/wandb are only needed
+# for training, not for generation, so they are left out.
+transformers[torch]==4.45.2
 accelerate==0.34.2
 peft==0.13.0
 datasets>=2.19
@@ -21,5 +25,5 @@ sacrebleu>=2.4,<3.0
 unbabel-comet==2.2.7
 
 # --- MetricX-24 (code: third_party/metricx submodule, `python -m metricx24.predict`) ---
-# Its own requirements pin transformers==4.30.2; it also runs on the 4.51.1 above
+# Its own requirements pin transformers==4.30.2; it also runs on the 4.45.2 above
 # (the MT5 internals it uses are unchanged). No extra packages needed.
