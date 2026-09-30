@@ -12,9 +12,9 @@ External code is included as git submodules in `third_party/`:
 |---|---|---|
 | BLEU (SacreBLEU) | [`sacrebleu`](https://github.com/mjpost/sacrebleu) | pip |
 | chrF++ | [`sacrebleu`](https://github.com/mjpost/sacrebleu) (`CHRF(word_order=2)`) | pip |
-| XCOMET-XXL | [`unbabel-comet`](https://github.com/Unbabel/COMET), model [`Unbabel/XCOMET-XXL`](https://huggingface.co/Unbabel/XCOMET-XXL), as used in the ALMA-R paper | pip, plus the HF license |
+| XCOMET-XXL | [`unbabel-comet`](https://github.com/Unbabel/COMET), model [`Unbabel/XCOMET-XXL`](https://huggingface.co/Unbabel/XCOMET-XXL), as used in the ALMA-R paper | pip, plus the Hugging Face license |
 | MetricX-24 Hybrid | [`google-research/metricx`](https://github.com/google-research/metricx), model [`google/metricx-24-hybrid-xl-v2p6`](https://huggingface.co/google/metricx-24-hybrid-xl-v2p6) | git submodule `third_party/metricx` (not on PyPI) plus pip deps |
-| Hallucination rate | own code (`scripts/score_lexical.py`): % of sentences where the candidate is at least 2× as long as the **reference**, in characters. A source-based ratio would flag almost all zh→en sentences. | nothing |
+| Hallucination rate | own code (`scripts/score_lexical.py`): % of sentences where the candidate is at least 2× as long as the **reference**, in characters. A source-based ratio would flag almost all zh→en sentences. | - |
 
 The ALMA-R paper also reports **COMET-22** (`Unbabel/wmt22-comet-da`), **KIWI-22** (`Unbabel/wmt22-cometkiwi-da`) and **KIWI-XXL** (`Unbabel/wmt23-cometkiwi-da-xxl`). We compute them too (same `unbabel-comet` package) so we can compare with the paper on every metric.
 
