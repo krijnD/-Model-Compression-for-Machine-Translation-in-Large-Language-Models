@@ -10,10 +10,10 @@
 # settings of third_party/ALMA/evals/alma_13b_r.sh.
 #   DECODING=paper : beam 5 + the model's generation_config (do_sample, temp 0.9, top_p 0.6), as in the paper (default)
 #   DECODING=beam  : plain beam search, do_sample=False (deterministic)
-# Override with: sbatch --export=ALL,DECODING=beam,MODEL=/path/to/weights,OUT=/path scripts/snellius/generate_alma_r.job
+# Override with: sbatch --export=ALL,DECODING=beam,MODEL=/path/to/weights,OUT=/path slurm/generate_alma_r.job
 
 set -euo pipefail
-source scripts/snellius/env.sh
+source slurm/env.sh
 
 # Local copy of the merged weights WITHOUT the adapter files (see README):
 # loading "haoranxu/ALMA-13B-R" by name makes transformers load ALMA-13B-Pretrain + adapter instead.

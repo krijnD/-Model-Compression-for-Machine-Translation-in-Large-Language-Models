@@ -8,24 +8,24 @@
 
 # Distil fp16 ALMA-13B-R into a LoRA on the frozen w3 checkpoint (francesco/docs/06-distillation.md).
 # Submit from the repo root. Run the smoke test first:
-#   sbatch --export=ALL,SMOKE=1 francesco/analysis/sbatch/distill.job   # ~20 min: 30 steps + 8-line generation
-#   sbatch francesco/analysis/sbatch/distill.job                        # full run (~30k examples, 1 epoch)
+#   sbatch --export=ALL,SMOKE=1 slurm/distill.job   # ~20 min: 30 steps + 8-line generation
+#   sbatch slurm/distill.job                        # full run (~30k examples, 1 epoch)
 # SMOKE=1 checks: gradients reach every adapter through TorchQuantLinear ("grad_check" line), loss finite,
 # peak memory, s/step and "eta_min" (the full-run time, measured), and that the saved adapter loads on the
 # repacked w3 (ExllamaV2) and generates.
 #   BITS=3          : student checkpoint models/ALMA-13B-R-gptq-w${BITS}g128 (default 3); the smoke generation
 #                     uses its repacked 4-bit-container copy (docs/04-kernel-repack.md)
-#   ADAPTER=<dir>   : output folder (default /scratch-shared/$USER/models/ALMA-13B-R-gptq-w${BITS}g128-kd-lora)
-#   w2, rank 64:  sbatch --export=ALL,BITS=2,ADAPTER=/scratch-shared/$USER/models/ALMA-13B-R-gptq-w2g128-kd-lora-r64,EXTRA="--r 64 --alpha 128" francesco/analysis/sbatch/distill.job
+#   ADAPTER=<dir>   : output folder (default $ARTIFACTS_DIR/ALMA-13B-R-gptq-w${BITS}g128-kd-lora)
+#   w2, rank 64:  sbatch --export=ALL,BITS=2,ADAPTER=$ARTIFACTS_DIR/ALMA-13B-R-gptq-w2g128-kd-lora-r64,EXTRA="--r 64 --alpha 128" slurm/distill.job
 #   EXTRA="..."     : more distill_lora.py flags, e.g. EXTRA="--kd-weight 0 --ce-weight 1" (SFT variant)
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 VENV=venv-quant
-source scripts/snellius/env.sh
+source slurm/env.sh
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
 
-MODELS_SCRATCH="/scratch-shared/$USER/models"
+MODELS_SCRATCH="$ARTIFACTS_DIR"
 TEACHER="$PROJECT_DIR/models/ALMA-13B-R"
 BITS="${BITS:-3}"
 STUDENT="$PROJECT_DIR/models/ALMA-13B-R-gptq-w${BITS}g128"
@@ -40,12 +40,12 @@ fi
 
 echo "##### distill -> $ADAPTER ($(date))"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
-python francesco/analysis/distill_lora.py --teacher "$TEACHER" --student "$STUDENT" --out "$ADAPTER" \
+python scripts/distill/distill_lora.py --teacher "$TEACHER" --student "$STUDENT" --out "$ADAPTER" \
   "${STEPS[@]}" ${EXTRA:-}
 
 if [ "${SMOKE:-0}" = 1 ]; then
   echo "##### smoke: adapter on the repacked w3 (ExllamaV2), 8 lines en-is ($(date))"
-  python francesco/analysis/generate_lora.py --model "$W3AS4" --adapter "$ADAPTER" --pairs en-is \
+  python scripts/distill/generate_lora.py --model "$W3AS4" --adapter "$ADAPTER" --pairs en-is \
     --out "$ADAPTER/smoke-gen" --max-samples 8
   head -n 8 "$ADAPTER/smoke-gen/test-en-is"
 fi

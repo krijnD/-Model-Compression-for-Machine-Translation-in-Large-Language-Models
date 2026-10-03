@@ -2,19 +2,18 @@
 
 x = monolingual NLL increase over fp16 per language, y = translation NLL increase for both directions
 (into English and out of English), joined per language. One ACL column wide.
-Reads francesco/results/json/lang_nll_{fp16,w3}.json, writes francesco/paper/figures/nll_w3.pdf.
-Usage: python francesco/analysis/plot_nll_w3.py
+Reads results/json/lang_nll_{fp16,w3}.json, writes paper/figures/nll_w3.pdf.
+Usage: python scripts/paper/plot_nll_w3.py
 """
 import json
-from pathlib import Path
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-REPO = Path(__file__).resolve().parents[2]
-J = REPO / "francesco/results/json"
-OUT = REPO / "francesco/paper/figures/nll_w3.pdf"
+from mtcompress.paths import FIGURES, JSON as J
+
+OUT = FIGURES / "nll_w3.pdf"
 LANGS = {"is": "Icelandic", "de": "German", "cs": "Czech", "ru": "Russian", "zh": "Chinese"}
 
 fp16 = json.load(open(J / "lang_nll_fp16.json"))["nll"]

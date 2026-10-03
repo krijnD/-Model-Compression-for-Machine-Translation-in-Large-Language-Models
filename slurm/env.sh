@@ -18,7 +18,7 @@ export HF_HOME="${HF_HOME:-$PROJECT_DIR/hf_cache}"
 OUTPUT_ROOT="$PROJECT_DIR/outputs"
 WMT22_PAIRS="de-en,cs-en,is-en,zh-en,ru-en,en-de,en-cs,en-is,en-zh,en-ru"
 
-# Which translations to score (same mapping in scripts/score_lexical.py):
+# Which translations to score (same mapping in scripts/reproduce/score_lexical.py):
 #   paper = the paper's ALMA-13B-R outputs, ours = our run with paper decoding, ours-beam = plain beam search,
 #   anything else = outputs/<RUN>/wmt22 (e.g. RUN=gptq-w4g128, written by generate_quantized.job)
 RUN="${RUN:-ours}"

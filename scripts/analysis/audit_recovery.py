@@ -3,7 +3,7 @@
 Per direction and system: train/test overlap, length ratio, repetition loops, off-target language, copied
 sources, number preservation, XCOMET-XXL error spans (critical / major), length buckets, similarity to the fp16
 teacher, and a dump of the worst segments for manual reading.
-Usage: python francesco/analysis/audit_recovery.py [--kd gptq-w2g128-as4-kd-r64-cont]
+Usage: python scripts/analysis/audit_recovery.py [--kd gptq-w2g128-as4-kd-r64-cont]
 """
 import argparse
 import json
@@ -18,7 +18,7 @@ REPO = Path(__file__).resolve().parents[2]
 OUT = REPO.parent / "outputs"
 TESTSET = REPO / "third_party/ALMA/outputs/wmt22_outputs/wmt-testset"
 ALMA_DATA = REPO / "third_party/ALMA/human_written_data"
-J = REPO / "francesco/results/json"
+J = REPO / "results/json"
 PAIRS = ["is-en", "en-is", "de-en", "en-de", "cs-en", "en-cs", "ru-en", "en-ru", "zh-en", "en-zh"]
 
 # Tiny stopword LID over the six languages; scripts first for ru / zh.
@@ -92,7 +92,7 @@ def xcomet(run, pair):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--kd", default="gptq-w2g128-as4-kd-r64-cont")
-    ap.add_argument("--dump", default=str(REPO / "francesco/results/audit"))
+    ap.add_argument("--dump", default=str(REPO / "results/audit"))
     a = ap.parse_args()
     systems = {"fp16": ("alma-13b-r-beam", "ours-beam"), "w4": ("gptq-w4g128", "gptq-w4g128"),
                "w3": ("gptq-w3g128", "gptq-w3g128"), "w2+KD": (a.kd, a.kd)}

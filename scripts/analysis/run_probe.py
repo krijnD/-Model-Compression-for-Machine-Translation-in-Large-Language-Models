@@ -1,6 +1,6 @@
 """Is batch size a real lever for GPTQ 2-bit / 3-bit generation?
 
-Background: scripts/snellius/eval_quantized.job runs at BATCH=4. The 2- and 3-bit runs are
+Background: slurm/eval_quantized.job runs at BATCH=4. The 2- and 3-bit runs are
 3-10x slower per line than 4-bit, which threatens the 20 h wall on the w2 run. If that time is
 per-forward dequantization of the weight matrix, a larger batch amortizes it (dequant runs once
 per forward, regardless of batch); if it is the bf16 matmul, batch size buys nothing beyond kernel
@@ -10,7 +10,7 @@ efficiency. Everything in gptqmodel's TritonV2 is quant_matmul():
 This probe measures the same generation at several batch sizes and, independently, the cost of
 the dequant alone, which is what the decision needs.
 
-Run via francesco/analysis/sbatch/probe.sbatch (which activates venv-quant and holds the GPU). Reuses the repo's
+Run via slurm/probe.sbatch (which activates venv-quant and holds the GPU). Reuses the repo's
 own module loader (alma_prompt.py) so prompts/padding/extraction match make the number comparable
 to the job logs: same prompt, max_length padding, max_source_length, bf16, beam 5, seed 42.
 """

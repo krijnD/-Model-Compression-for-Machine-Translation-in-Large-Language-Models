@@ -7,14 +7,14 @@
 #SBATCH --output=logs/slurm-%x-%j.out
 
 # All 8 metrics for a finished 10-direction generation in outputs/$RUN/wmt22, exactly as the grid runs:
-# steps 2-5 of scripts/snellius/eval_quantized.job (generation is done elsewhere, e.g. gen_lora.job).
+# steps 2-5 of slurm/eval_quantized.job (generation is done elsewhere, e.g. gen_lora.job).
 #   COMET family (xcomet-xxl, kiwi-xxl, kiwi-22, comet-22), MetricX-24, BLEU/chrF++/hallucination, and
 #   summarize.py --vs $VS -> outputs/baseline/$RUN.tsv (same format as the fp16/w8/w4/w3/w2 rows).
 # Needs an H100 (XCOMET-XXL / KIWI-XXL ~43 GB). Finished metrics are skipped, so it can be resubmitted.
-#   sbatch --export=ALL,RUN=gptq-w2g128-as4-kd-r64-cont francesco/analysis/sbatch/score_full.job
+#   sbatch --export=ALL,RUN=gptq-w2g128-as4-kd-r64-cont slurm/score_full.job
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
-source scripts/snellius/env.sh
+source slurm/env.sh
 export RUN="${RUN:?set RUN, the folder in outputs/}"
 VS="${VS:-ours-beam}"
 check_translations "$OUTPUT_ROOT/$RUN/wmt22"   # all 10 directions complete, or stop here
@@ -24,14 +24,14 @@ COMET_METRICS=(xcomet-xxl kiwi-xxl kiwi-22 comet-22)   # same order as score_com
 for i in "${!COMET_METRICS[@]}"; do
   echo "##### ${COMET_METRICS[$i]} ($(date))"
   if done_metric "${COMET_METRICS[$i]}"; then echo "Skipping: already scored"; continue; fi
-  SLURM_ARRAY_TASK_ID=$i bash scripts/snellius/score_comet.job
+  SLURM_ARRAY_TASK_ID=$i bash slurm/score_comet.job
 done
 echo "##### metricx-24 ($(date))"
-if done_metric metricx-24; then echo "Skipping: already scored"; else bash scripts/snellius/score_metricx.job; fi
+if done_metric metricx-24; then echo "Skipping: already scored"; else bash slurm/score_metricx.job; fi
 
-source scripts/snellius/env.sh
+source slurm/env.sh
 echo "##### lexical ($(date))"
-python scripts/score_lexical.py --run "$RUN"
+python scripts/reproduce/score_lexical.py --run "$RUN"
 echo "##### summary ($(date))"
-python scripts/summarize.py --run "$RUN" --vs "$VS"
+python scripts/reproduce/summarize.py --run "$RUN" --vs "$VS"
 echo "##### done ($(date))"

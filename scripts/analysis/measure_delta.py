@@ -18,9 +18,9 @@ Dequantization is GPTQModel's own TorchQuantLinear.dequantize_weight() after its
 conversion (checkpoint_format "gptq" = v1), i.e. exactly what the eval runs computed.
 
 Usage (CPU, login node is fine; ~2-3 GB RAM per module):
-  venv-quant/bin/python francesco/analysis/measure_delta.py \
+  venv-quant/bin/python scripts/analysis/measure_delta.py \
       --pretrain-dir /scratch-shared/scur0517/alma_delta --layers 0 20 39 \
-      --out francesco/results/json/delta_erasure.json
+      --out results/json/delta_erasure.json
 The pretrain shards are haoranxu/ALMA-13B-Pretrain pytorch_model-0000{1,3,6}-of-00006.bin
 (layers 0-7, 15-22, 38-39); adapter_model.bin from haoranxu/ALMA-13B-Pretrain-LoRA.
 """

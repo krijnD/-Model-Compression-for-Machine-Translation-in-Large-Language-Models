@@ -7,7 +7,7 @@ i.e. the student learns to put its probability mass where fp16 puts it, not to i
 --ce-weight adds the usual cross-entropy on the reference tokens (the "SFT on references" variant is
 --kd-weight 0 --ce-weight 1, which also skips loading the teacher).
 
-Data: ALMA's human-written parallel train files (scripts/alma_prompt.py load_train_pairs), in ALMA's
+Data: ALMA's human-written parallel train files (mtcompress/alma_prompt.py load_train_pairs), in ALMA's
 fine-tuning format: BOS + prompt + target + EOS, loss on target + EOS, exactly the calibration format.
 No overlap with the WMT'22 (WMT'21 for is) test sets. --heldout rows per language pair are held out of
 training in *both* directions (the two directions of a pair share the same sentence pairs) and give the
@@ -15,8 +15,8 @@ held-out KL per direction, logged at step 0 (= the damage of plain w3) and every
 Sampling: every remaining Icelandic row, repeated --is-repeat times, the rest of --n-examples split
 evenly over the other 8 directions.
 
-  python francesco/analysis/distill_lora.py --teacher ../models/ALMA-13B-R \
-      --student ../models/ALMA-13B-R-gptq-w3g128 --out /scratch-shared/$USER/models/w3-kd-lora
+  python scripts/distill/distill_lora.py --teacher $MODELS_DIR/ALMA-13B-R \
+      --student $MODELS_DIR/ALMA-13B-R-gptq-w3g128 --out $ARTIFACTS_DIR/w3-kd-lora
   (--init-adapter <dir> continues a finished run with a fresh schedule; --max-steps 30 for a smoke test; a student folder without quantize_config.json is loaded as a
    plain HF model, which is how the fp16 + LoRA control and the CPU test with a tiny model run)
 Output: <out>/adapter.safetensors, adapter_config.json (all settings + data counts), train_log.jsonl.

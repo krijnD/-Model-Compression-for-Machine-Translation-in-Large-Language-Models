@@ -7,10 +7,9 @@ Keep this file in sync with ALMA if the submodule is updated.
 """
 import json
 import random
-from pathlib import Path
 
-REPO_DIR = Path(__file__).resolve().parents[1]
-ALMA_DATA = REPO_DIR / "third_party/ALMA/human_written_data"
+from mtcompress.paths import ALMA_DATA
+
 WMT22_PAIRS = ["de-en", "cs-en", "is-en", "zh-en", "ru-en", "en-de", "en-cs", "en-is", "en-zh", "en-ru"]
 
 LANG_TABLE = {"en": "English", "de": "German", "cs": "Czech", "is": "Icelandic", "zh": "Chinese", "ru": "Russian"}

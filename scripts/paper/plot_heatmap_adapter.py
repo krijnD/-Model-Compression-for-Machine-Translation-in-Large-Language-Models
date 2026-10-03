@@ -1,16 +1,19 @@
-"""Direction x precision heatmap with the distilled adapter, in the style of fig2_heatmap (make_report.py).
+"""Appendix figure: direction x precision heatmap of the recovered 3-bit model (paper Figure 4).
 
 Columns: FP16 (absolute score, grey: the reference), then the change vs FP16 for W4G128, W3G128 and W3G128 + adapter.
 Rows: the four directions the adapter was generated for (is-en, en-is, de-en, en-de).
 Metrics: BLEU, chrF++ (sacrebleu on outputs/*/wmt22) and XCOMET-XXL (outputs/xcomet-xxl/<run>/<pair>.txt).
 MetricX-24 (in fig2) was not run for the adapter outputs, so chrF++ takes its place.
 W3 is the repacked run on the same ExllamaV2 kernel as the adapter run (docs/04-kernel-repack.md §8), so the two
-W3 columns differ only by the adapter. Colour scale as fig2: RdYlGn_r, symmetric per metric, red = worse.
+W3 columns differ only by the adapter. Colour scale: RdYlGn_r, symmetric per metric, red = worse.
 
-  ../venv/bin/python francesco/analysis/plot_heatmap_adapter.py   # -> results/figures/fig10_heatmap_adapter.{png,pdf}
+The cell values are cached in results/json/adapter_heatmap.json, so the figure builds from the repository alone:
+  python scripts/paper/plot_heatmap_adapter.py                  # plot from the cache
+  python scripts/paper/plot_heatmap_adapter.py --from-outputs   # rescore from $OUTPUTS_DIR, rewrite the cache
 """
+import argparse
+import json
 import re
-from pathlib import Path
 
 import matplotlib
 matplotlib.use("Agg")
@@ -18,10 +21,10 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from sacrebleu.metrics import BLEU, CHRF  # noqa: E402
 
-REPO = Path(__file__).resolve().parents[2]
-OUT = REPO.parent / "outputs"
-TESTSET = REPO / "third_party/ALMA/outputs/wmt22_outputs/wmt-testset"
-FIG = REPO / "francesco/results/figures/fig10_heatmap_adapter"
+from mtcompress.paths import FIGURES, JSON, OUTPUTS as OUT, TESTSET  # noqa: E402
+
+FIG = FIGURES / "w3_adapter_heatmap"
+CACHE = JSON / "adapter_heatmap.json"
 
 PAIRS = ["is-en", "en-is", "de-en", "en-de"]
 # column label -> (generation folder in outputs/, xcomet folder in outputs/xcomet-xxl/)
@@ -50,11 +53,21 @@ def score(metric, run, xc, pair):
     return CHRF(word_order=2).corpus_score(hyp, [ref]).score
 
 
+def scores_from_outputs():
+    return {m: {c.replace("\n", " "): {p: score(m, *RUNS[c], p) for p in PAIRS} for c in RUNS} for m in METRICS}
+
+
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--from-outputs", action="store_true", help="rescore from $OUTPUTS_DIR and rewrite the cache")
+    if ap.parse_args().from_outputs:
+        CACHE.write_text(json.dumps(scores_from_outputs(), indent=1) + "\n")
+        print(f"wrote {CACHE}")
+    cached = json.loads(CACHE.read_text())
     cols = list(RUNS)
     fig, axes = plt.subplots(1, 3, figsize=(9.0, 2.6))
     for ax, metric in zip(axes, METRICS):
-        raw = np.array([[score(metric, *RUNS[c], p) for c in cols] for p in PAIRS])
+        raw = np.array([[cached[metric][c.replace("\n", " ")][p] for c in cols] for p in PAIRS], dtype=float)
         delta = raw[:, 1:] - raw[:, :1]                     # vs FP16; all metrics here: higher is better
         orient = -delta                                     # positive == worse, as fig2
         vmax = np.nanmax(np.abs(orient)) if np.isfinite(orient).any() else 1.0
@@ -80,9 +93,8 @@ def main():
                             color="white" if dark else "black",
                             fontweight="bold" if j == raw.shape[1] - 1 else "normal")
     fig.tight_layout()
-    for ext in ("png", "pdf"):
-        fig.savefig(f"{FIG}.{ext}", dpi=200)
-    print(f"wrote {FIG}.png/.pdf")
+    fig.savefig(f"{FIG}.pdf", dpi=200)
+    print(f"wrote {FIG}.pdf")
 
 
 if __name__ == "__main__":

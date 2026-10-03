@@ -8,9 +8,9 @@ Report dNLL = NLL(quantized) - NLL(fp16) per language. If `is` collapses because
 Icelandic itself, `mono` dNLL for `is` dwarfs `de`'s; if it lost the mapping, `mono` is flat
 and only `trans` diverges.
 
-  python francesco/analysis/lang_nll.py --model ../models/ALMA-13B-R [--quantized] \
-      --tag fp16 --out francesco/results/json/lang_nll_fp16.json [--limit 500]
-  python francesco/analysis/lang_nll.py --compare francesco/results/json/lang_nll_*.json
+  python scripts/analysis/lang_nll.py --model $MODELS_DIR/ALMA-13B-R [--quantized] \
+      --tag fp16 --out results/json/lang_nll_fp16.json [--limit 500]
+  python scripts/analysis/lang_nll.py --compare results/json/lang_nll_*.json
   --adapter <dir>: add a distill_lora.py adapter on top of --model (the w3 + KD run, docs/06-distillation.md)
 """
 import argparse

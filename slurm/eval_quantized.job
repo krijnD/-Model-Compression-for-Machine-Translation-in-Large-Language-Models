@@ -18,10 +18,10 @@
 #   DECODING=paper    : beam sampling instead of plain beam search; the run becomes $QUANT-paper
 #   VS=ours-beam      : run to compare with in the summary (default ours-beam, or ours for DECODING=paper)
 # Usage: for q in gptq-w2g128 gptq-w3g128 gptq-w4g128 gptq-w8g128; do
-#          sbatch --export=ALL,QUANT=$q scripts/snellius/eval_quantized.job; done
+#          sbatch --export=ALL,QUANT=$q slurm/eval_quantized.job; done
 
 set -euo pipefail
-source scripts/snellius/env.sh
+source slurm/env.sh
 
 export QUANT="${QUANT:?set QUANT, e.g. QUANT=gptq-w4g128}"
 export DECODING="${DECODING:-beam}"
@@ -35,21 +35,21 @@ esac
 done_metric() { local f="$OUTPUT_ROOT/$1/$RUN/summary.tsv"; [ -f "$f" ] && [ "$(awk 'END{print NR}' "$f")" -eq 11 ]; }
 
 echo "##### 1/5 generate $RUN ($(date))"
-bash scripts/snellius/generate_quantized.job   # exits non-zero if a direction is incomplete
+bash slurm/generate_quantized.job   # exits non-zero if a direction is incomplete
 
 COMET_METRICS=(xcomet-xxl kiwi-xxl kiwi-22 comet-22)   # same order as in score_comet.job
 for i in "${!COMET_METRICS[@]}"; do
   echo "##### 2/5 ${COMET_METRICS[$i]} ($(date))"
   if done_metric "${COMET_METRICS[$i]}"; then echo "Skipping: already scored"; continue; fi
-  SLURM_ARRAY_TASK_ID=$i bash scripts/snellius/score_comet.job
+  SLURM_ARRAY_TASK_ID=$i bash slurm/score_comet.job
 done
 
 echo "##### 3/5 metricx-24 ($(date))"
-if done_metric metricx-24; then echo "Skipping: already scored"; else bash scripts/snellius/score_metricx.job; fi
+if done_metric metricx-24; then echo "Skipping: already scored"; else bash slurm/score_metricx.job; fi
 
-source scripts/snellius/env.sh   # back to venv (the steps above run in their own shells)
+source slurm/env.sh   # back to venv (the steps above run in their own shells)
 echo "##### 4/5 lexical ($(date))"
-python scripts/score_lexical.py --run "$RUN"
+python scripts/reproduce/score_lexical.py --run "$RUN"
 
 echo "##### 5/5 summary ($(date))"
-python scripts/summarize.py --run "$RUN" --vs "$VS"
+python scripts/reproduce/summarize.py --run "$RUN" --vs "$VS"

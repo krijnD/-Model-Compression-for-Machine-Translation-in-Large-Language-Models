@@ -4,7 +4,7 @@ Reads <project dir>/outputs/<metric>/<run>/summary.tsv (written by score_comet.j
 score_metricx.job and score_lexical.py); missing metrics are shown as "-".
 Writes <project dir>/outputs/baseline/<run>.tsv.
 
-Usage (from the repo root): python scripts/summarize.py --run ours --vs paper
+Usage (from the repo root): python scripts/reproduce/summarize.py --run ours --vs paper
 """
 import argparse
 from pathlib import Path

@@ -6,7 +6,7 @@
 #SBATCH --time=03:00:00
 #SBATCH --output=logs/slurm-%x-%j.out
 
-# Does the lossless 3/2-bit -> 4-bit repack (francesco/analysis/repack_to_w4.py) turn w3 and w2 into
+# Does the lossless 3/2-bit -> 4-bit repack (scripts/quantize/repack_to_w4.py) turn w3 and w2 into
 # w4-speed checkpoints? The repacked folders dequantize to exactly the same weights (verified on CPU
 # on an 11-module sample covering every Linear type, results/json/repack_*.json; the conversion
 # step re-verifies on the written files) but load as bits=4, so GPTQModel can give them
@@ -19,21 +19,21 @@
 #      as the determinism control, the original w3 (TorchQuantLinear, the grid's kernel), both
 #      compared with the scored grid outputs in outputs/gptq-w3g128/wmt22
 # Read-only for the grid: new outputs go to outputs/repack-check/, new records to results/json/.
-#   sbatch francesco/analysis/sbatch/repack_bench.job
-#   sbatch --export=ALL,STEPS=time francesco/analysis/sbatch/repack_bench.job   # timing only
+#   sbatch slurm/repack.job
+#   sbatch --export=ALL,STEPS=time slurm/repack.job   # timing only
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 VENV=venv-quant
-source scripts/snellius/env.sh
+source slurm/env.sh
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
 
-REPACK_ROOT="${REPACK_ROOT:-/scratch-shared/$USER/models}"
+REPACK_ROOT="${REPACK_ROOT:-$ARTIFACTS_DIR}"
 STEPS="${STEPS:-convert,time,quality}"
 COMBOS="${COMBOS:-w3as4:auto,exllama_v2 w2as4:auto,exllama_v2}"
 REPS="${REPS:-3}"
 LINES="${LINES:-200}"
-JSON="$REPO_DIR/francesco/results/json"
+JSON="$REPO_DIR/results/json"
 CHECK="$OUTPUT_ROOT/repack-check"
 model_of() {  # w3as4 -> repacked folder, w3 -> original
   case "$1" in
@@ -50,7 +50,7 @@ if [[ ",$STEPS," == *",convert,"* ]]; then
     dst="$(model_of "w${b}as4")"
     if [ -f "$dst/quantize_config.json" ]; then echo "----- $dst exists, not converting"; continue; fi
     echo "----- convert w$b -> $dst ($(date +%H:%M:%S))"
-    python francesco/analysis/repack_to_w4.py --src "$(model_of "w$b")" --dst "$dst" \
+    python scripts/quantize/repack_to_w4.py --src "$(model_of "w$b")" --dst "$dst" \
       --report "$JSON/repack_w${b}_written.json"
   done
 fi
@@ -61,7 +61,7 @@ if [[ ",$STEPS," == *",time,"* ]]; then
     [ -f "$model/quantize_config.json" ] || { echo "missing $model"; exit 1; }
     for be in ${backends//,/ }; do
       echo "----- $tag / $be, BATCH=4 + zh-en 512 @4 ($(date +%H:%M:%S))"
-      python francesco/analysis/measure_quant_cost.py \
+      python scripts/analysis/measure_quant_cost.py \
         --model "$model" --tag "$tag" --backend "$be" --reps "$REPS" \
         --phases short,long_batch_probe \
         --short-pair de-en --short-batch 4 --short-source-length 256 \
@@ -74,7 +74,7 @@ if [[ ",$STEPS," == *",time,"* ]]; then
     # probe16_<tag>.json). Not measure_quant_cost.py: a backend_*_b16.json would share its
     # (tag, backend) key with the BATCH=4 record in make_report.load_backends() and overwrite it.
     echo "----- $tag, BATCH=4 vs 16 probe ($(date +%H:%M:%S))"
-    python francesco/analysis/run_probe.py --model "$model" --pair de-en \
+    python scripts/analysis/run_probe.py --model "$model" --pair de-en \
       --batches 4,16 --reps "$REPS" --max-source-length 256 \
       --max-new-tokens 256 --num-beams 5 --dtype bfloat16 \
       --out "$JSON/probe16_${tag}.json" \
@@ -89,19 +89,19 @@ if [[ ",$STEPS," == *",quality,"* ]]; then
     tag="${run%%:*}"; be="${run#*:}"
     out="$CHECK/${tag}_${be}"
     echo "----- quality $tag ($be), $LINES lines ($(date +%H:%M:%S))"
-    python scripts/generate_quantized.py --model "$(model_of "$tag")" --pairs de-en,en-is \
+    python scripts/quantize/generate_quantized.py --model "$(model_of "$tag")" --pairs de-en,en-is \
       --out "$out" --backend "$be" --max-samples "$LINES" --batch-size 4 \
       --max-source-length 256 --max-new-tokens 256 --num-beams 5 --dtype bfloat16 --seed 42 \
       || echo "##### quality $tag FAILED"
   done
   source "$PROJECT_DIR/venv/bin/activate"        # sacrebleu lives in the scoring venv
   for tag in w3as4_auto w3_torch; do
-    python francesco/analysis/compare_outputs.py --a "$OUTPUT_ROOT/gptq-w3g128/wmt22" \
+    python scripts/analysis/compare_outputs.py --a "$OUTPUT_ROOT/gptq-w3g128/wmt22" \
       --b "$CHECK/$tag" --labels grid,"$tag" --pairs de-en,en-is --lines "$LINES" \
       --out "$JSON/repack_quality_${tag}.json" || true
   done
   # the grid's own w4 as the scale: how different is "a different model" on the same lines
-  python francesco/analysis/compare_outputs.py --a "$OUTPUT_ROOT/gptq-w3g128/wmt22" \
+  python scripts/analysis/compare_outputs.py --a "$OUTPUT_ROOT/gptq-w3g128/wmt22" \
     --b "$OUTPUT_ROOT/gptq-w4g128/wmt22" --labels grid,w4 --pairs de-en,en-is --lines "$LINES" || true
 fi
 echo "##### done ($(date))"

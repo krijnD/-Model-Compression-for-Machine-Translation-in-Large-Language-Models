@@ -6,8 +6,8 @@ prompt from get_prompt, left padding to exactly --max-source-length (ALMA pads w
 truncation, bf16, beam 5, max 256 new tokens, seed 42, decode prompt + generation and cut out the
 translation with clean_outputstring. Output files are test-<src>-<tgt>, like run_llmmt.py writes.
 
-Usage: python scripts/generate_quantized.py --model ../models/ALMA-13B-R-gptq-w4g128 \
-           --pairs de-en,en-de --out ../outputs/gptq-w4g128/wmt22 [--decoding beam]
+Usage: python scripts/quantize/generate_quantized.py --model $MODELS_DIR/ALMA-13B-R-gptq-w4g128 \
+           --pairs de-en,en-de --out $OUTPUTS_DIR/gptq-w4g128/wmt22 [--decoding beam]
 """
 import argparse
 import sys

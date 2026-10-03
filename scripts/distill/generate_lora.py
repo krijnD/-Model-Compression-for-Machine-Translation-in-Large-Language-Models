@@ -1,4 +1,4 @@
-"""scripts/generate_quantized.py with an optional LoRA adapter from distill_lora.py (see docs/06-distillation.md).
+"""scripts/quantize/generate_quantized.py with an optional LoRA adapter from distill_lora.py (see docs/06-distillation.md).
 
 The prediction path is a copy of generate_quantized.py's (same prompt, left padding to exactly
 --max-source-length, beam 5, bf16, seed 42, 256 new tokens, clean_outputstring), so outputs with and
@@ -6,8 +6,8 @@ without --adapter differ only by the adapter. Kept as a copy, not an edit, so sc
 The adapter wraps whatever kernel GPTQModel picks: on the repacked w3 (…-gptq-w3g128-as-w4) that is
 ExllamaV2QuantLinear, which dequantizes to the same weights the adapter was trained on (TorchQuantLinear).
 
-  python francesco/analysis/generate_lora.py --model /scratch-shared/$USER/models/ALMA-13B-R-gptq-w3g128-as-w4 \
-      --adapter /scratch-shared/$USER/models/w3-kd-lora --pairs is-en,en-is --out ../outputs/gptq-w3g128-as4-kd/wmt22
+  python scripts/distill/generate_lora.py --model $ARTIFACTS_DIR/ALMA-13B-R-gptq-w3g128-as-w4 \
+      --adapter $ARTIFACTS_DIR/w3-kd-lora --pairs is-en,en-is --out $OUTPUTS_DIR/gptq-w3g128-as4-kd/wmt22
 """
 import argparse
 import sys

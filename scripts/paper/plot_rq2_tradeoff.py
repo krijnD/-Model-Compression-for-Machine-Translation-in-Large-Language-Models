@@ -1,23 +1,21 @@
 """Paper figure for RQ2: peak GPU memory vs average XCOMET-XXL, with arrows from each plain low-bit model to its
 distilled-adapter version. One ACL column wide.
 
-Memory: peak_alloc at batch 4 from francesco/results/json/probe16_<tag>.json (de-en, beam 5, source 256), with the
+Memory: peak_alloc at batch 4 from results/json/probe16_<tag>.json (de-en, beam 5, source 256), with the
 adapter counted in bf16 (measured fp32 peak minus 2 bytes per adapter parameter, the paper's convention).
-Quality: mean XCOMET-XXL over the 10 directions from outputs/baseline/<run>.tsv.
-Writes francesco/paper/figures/rq2_tradeoff.pdf. Usage: python francesco/analysis/plot_rq2_tradeoff.py
+Quality: mean XCOMET-XXL over the 10 directions from results/scores/<run>.tsv.
+Writes paper/figures/rq2_tradeoff.pdf. Usage: python scripts/paper/plot_rq2_tradeoff.py
 """
 import csv
 import json
-from pathlib import Path
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-REPO = Path(__file__).resolve().parents[2]
-PROBES = Path("/gpfs/home6/scur0517/Model-Compression-MT/francesco/results/json")
-BASE = Path("/gpfs/home6/scur0517/outputs/baseline")
-OUT = REPO / "francesco/paper/figures/rq2_tradeoff.pdf"
+from mtcompress.paths import FIGURES, JSON, SCORES
+
+OUT = FIGURES / "rq2_tradeoff.pdf"
 PAIRS = "de-en cs-en is-en zh-en ru-en en-de en-cs en-is en-zh en-ru".split()
 GIB = 1024 ** 3
 ADAPTER_BF16_SAVING = {"w3kd": 62_586_880 * 2 / GIB, "w2kd": 250_347_520 * 2 / GIB}  # fp32 -> bf16
@@ -28,12 +26,12 @@ MODELS = {"fp16": ("fp16", "ours-beam"), "w8": ("w8", "gptq-w8g128"), "w4": ("w4
 
 
 def peak(tag):
-    d = json.load(open(PROBES / f"probe16_{tag}.json"))
+    d = json.load(open(JSON / f"probe16_{tag}.json"))
     return d["per_batch"]["4"]["peak_alloc_mib"] / 1024 - ADAPTER_BF16_SAVING.get(tag, 0.0)
 
 
 def xcomet(run):
-    rows = [r for r in csv.DictReader(open(BASE / f"{run}.tsv"), delimiter="\t")
+    rows = [r for r in csv.DictReader(open(SCORES / f"{run}.tsv"), delimiter="\t")
             if r["metric"] == "xcomet-xxl" and r["pair"] in PAIRS]
     assert len(rows) == 10, f"{run}: {len(rows)} directions scored"
     return sum(float(r[run]) for r in rows) / 10

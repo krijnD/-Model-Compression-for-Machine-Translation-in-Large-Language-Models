@@ -22,10 +22,10 @@ Format details this has to get right (gptqmodel/utils/model.py, nn_modules/qline
 Every tensor that is not a quantized Linear's qweight/qzeros is copied byte-for-byte.
 
   # check only, nothing written (CPU, streams one module at a time, minutes):
-  python francesco/analysis/repack_to_w4.py --src ../models/ALMA-13B-R-gptq-w3g128 --verify
+  python scripts/quantize/repack_to_w4.py --src $MODELS_DIR/ALMA-13B-R-gptq-w3g128 --verify
   # convert (and verify a sample of modules on the written files):
-  python francesco/analysis/repack_to_w4.py --src ../models/ALMA-13B-R-gptq-w3g128 \\
-      --dst /scratch-shared/$USER/models/ALMA-13B-R-gptq-w3g128-as-w4
+  python scripts/quantize/repack_to_w4.py --src $MODELS_DIR/ALMA-13B-R-gptq-w3g128 \\
+      --dst $ARTIFACTS_DIR/ALMA-13B-R-gptq-w3g128-as-w4
 
 --verify compares, per sampled module, three things on CPU: (1) GPTQModel's own TorchQuantLinear
 dequantization of the original b-bit tensors against the same code on the repacked 4-bit tensors
@@ -233,7 +233,7 @@ def main():
         index = {"metadata": {"total_size": total}, "weight_map": new_map}
         (dst / "model.safetensors.index.json").write_text(json.dumps(index, indent=2))
         stamp = {"repacked_from_bits": bits, "repacked_from": str(src),
-                 "tool": "francesco/analysis/repack_to_w4.py (lossless b-bit -> 4-bit container)"}
+                 "tool": "scripts/quantize/repack_to_w4.py (lossless b-bit -> 4-bit container)"}
         qcfg4 = dict(qcfg, bits=4)
         qcfg4["meta"] = dict(qcfg.get("meta", {}), **stamp)
         (dst / "quantize_config.json").write_text(json.dumps(qcfg4, indent=2))

@@ -8,18 +8,18 @@
 
 # GPTQ-quantize ALMA-13B-R (all decoder-layer Linears; embeddings, RMSNorms and lm_head stay fp16).
 # One bit width per array task; the array index is the bit width:
-#   sbatch --array=2,3,4,8 scripts/snellius/quantize_gptq.job
+#   sbatch --array=2,3,4,8 slurm/quantize_gptq.job
 #   -> <project dir>/models/ALMA-13B-R-gptq-w{2,3,4,8}g128
-# Other settings go through QUANT_ARGS (flags of scripts/quantize_gptq.py), e.g.
-#   sbatch --array=4 --export=ALL,QUANT_ARGS="--group-size -1 --sym" scripts/snellius/quantize_gptq.job
+# Other settings go through QUANT_ARGS (flags of scripts/quantize/quantize_gptq.py), e.g.
+#   sbatch --array=4 --export=ALL,QUANT_ARGS="--group-size -1 --sym" slurm/quantize_gptq.job
 
 set -euo pipefail
 VENV=venv-quant
-source scripts/snellius/env.sh
+source slurm/env.sh
 
 BITS="${SLURM_ARRAY_TASK_ID:-${BITS:-4}}"
 echo "Bits: $BITS | extra args: ${QUANT_ARGS:-none}"
-python scripts/quantize_gptq.py \
+python scripts/quantize/quantize_gptq.py \
   --model "${MODEL:-$PROJECT_DIR/models/ALMA-13B-R}" \
   --out-root "$PROJECT_DIR/models" \
   --bits "$BITS" \

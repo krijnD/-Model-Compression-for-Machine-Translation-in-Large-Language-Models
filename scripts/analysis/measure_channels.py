@@ -18,16 +18,16 @@ Profiles:
   pool:<lang>:N  N examples per direction from the same train pool, a larger sample used to check
                  that the top-k channel set is stable and not an artifact of ~100 examples
 
-Every prompt is ALMA's fine-tuning format (scripts/alma_prompt.py), so the only difference between
+Every prompt is ALMA's fine-tuning format (mtcompress/alma_prompt.py), so the only difference between
 profiles is the language, not the template. The mixture profile is cross-checked against
 alma_prompt.calibration_examples and the script refuses to continue if the two disagree.
 
 The raw per-channel vectors go to an .npz, so all ranking comparisons are offline and re-runnable.
 
 Usage (venv, one GPU), from the repo root:
-  python francesco/analysis/measure_channels.py --out francesco/results/json/channels.npz
-  python francesco/analysis/measure_channels.py --out ... --suffix mlp.down_proj,self_attn.o_proj
-  python francesco/analysis/measure_channels.py --compare francesco/results/json/channels.npz
+  python scripts/analysis/measure_channels.py --out results/json/channels.npz
+  python scripts/analysis/measure_channels.py --out ... --suffix mlp.down_proj,self_attn.o_proj
+  python scripts/analysis/measure_channels.py --compare results/json/channels.npz
 """
 import argparse
 import json
@@ -52,7 +52,7 @@ KS = (1, 8, 32)
 # ------------------------------------------------------------------------------- profiles
 
 def _encode(tokenizer, src, tgt, source, target, max_length):
-    """ALMA fine-tuning format, exactly as scripts/alma_prompt.py builds calibration examples."""
+    """ALMA fine-tuning format, exactly as mtcompress/alma_prompt.py builds calibration examples."""
     ids = tokenizer(get_prompt(src, tgt, source) + target,
                     max_length=max_length - 1, truncation=True).input_ids
     ids.append(tokenizer.eos_token_id)

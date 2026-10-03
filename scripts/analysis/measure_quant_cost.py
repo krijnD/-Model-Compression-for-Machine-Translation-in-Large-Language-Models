@@ -7,7 +7,7 @@ have a memory payoff, and what does it cost in inference time and throughput?
 Per checkpoint, in one process (so the peaks are that model's own):
   * load: wall time, resident weight bytes, peak during load
   * short protocol (de-en, source 256, BATCH=4) and long protocol (zh-en, source 512,
-    BATCH_LONG=1) - exactly the two settings scripts/snellius/eval_quantized.job runs - one
+    BATCH_LONG=1) - exactly the two settings slurm/eval_quantized.job runs - one
     warmup pass excluded, then `--reps` timed generate() calls: median wall, per-line time,
     output tokens/s, and the peak *allocated* / *reserved* VRAM during the timed phase
   * the long protocol at BATCH=4 as well, which is the batch the fp16 baseline cannot afford
@@ -17,12 +17,12 @@ Per checkpoint, in one process (so the peaks are that model's own):
 
 Loading the fp16 folder goes through transformers (a packed GPTQ checkpoint needs GPTQModel);
 everything else - prompts, padding, dtype, beam count, seed, generation kwargs - matches
-scripts/generate_quantized.py, so the fp16 row is comparable to the quantized rows.
+scripts/quantize/generate_quantized.py, so the fp16 row is comparable to the quantized rows.
 
-  python francesco/analysis/measure_quant_cost.py --model ../models/ALMA-13B-R --tag fp16 \
-      --out francesco/results/json/quant_cost_fp16.json
+  python scripts/analysis/measure_quant_cost.py --model $MODELS_DIR/ALMA-13B-R --tag fp16 \
+      --out results/json/quant_cost_fp16.json
 
-Run through francesco/analysis/sbatch/cost.sbatch, which loops over all five checkpoints.
+Run through slurm/quant_cost.job, which loops over all five checkpoints.
 """
 import argparse
 import json

@@ -7,10 +7,10 @@
 #SBATCH --output=logs/slurm-%x-%j.out
 
 # MetricX-24 Hybrid XL, reference-based. Lower is better (0-25).
-# Usage: sbatch --export=ALL,RUN=ours scripts/snellius/score_metricx.job   (RUN = paper | ours | ours-beam)
+# Usage: sbatch --export=ALL,RUN=ours slurm/score_metricx.job   (RUN = paper | ours | ours-beam)
 
 set -euo pipefail
-source scripts/snellius/env.sh
+source slurm/env.sh
 
 RESULTS="$OUTPUT_ROOT/metricx-24/$RUN"
 mkdir -p "$RESULTS"
@@ -38,4 +38,4 @@ EOF
   score=$(python -c "import json,sys; p=[json.loads(l)['prediction'] for l in open(sys.argv[1])]; print(f'{sum(p)/len(p):.2f}')" "$RESULTS/${pair}.jsonl")
   echo -e "${pair}\t${score}" | tee -a "$SUMMARY"
 done
-echo "Compare: python scripts/summarize.py --run $RUN"
+echo "Compare: python scripts/reproduce/summarize.py --run $RUN"

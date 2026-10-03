@@ -14,11 +14,11 @@
 # Same fixed workload as cost.sbatch (de-en, source 256, beam 5, first four sentences, BATCH=4 and
 # the zh-en 512 @BATCH=4 shape), one process per (checkpoint, kernel), written to
 # results/json/backend_<tag>_<backend>.json so the quant_cost_*.json records are untouched.
-#   sbatch francesco/analysis/sbatch/backends.sbatch
+#   sbatch slurm/backends.job
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 VENV=venv-quant
-source scripts/snellius/env.sh
+source slurm/env.sh
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
 
@@ -40,13 +40,13 @@ for combo in $COMBOS; do
       *)    model="$PROJECT_DIR/models/ALMA-13B-R-gptq-${tag}g128" ;;
     esac
     echo "----- $tag / $be ($(date +%H:%M:%S))"
-    python francesco/analysis/measure_quant_cost.py \
+    python scripts/analysis/measure_quant_cost.py \
       --model "$model" --tag "$tag" --backend "$be" --reps "$REPS" \
       --phases short,long_batch_probe \
       --short-pair de-en --short-batch 4 --short-source-length 256 \
       --long-pair zh-en --long-batch 1 --long-batch-probe 4 --long-source-length 512 \
       --max-new-tokens 256 --num-beams 5 --dtype bfloat16 \
-      --out "$REPO_DIR/francesco/results/json/backend_${tag}_${be}.json" \
+      --out "$REPO_DIR/results/json/backend_${tag}_${be}.json" \
       || echo "##### $tag/$be FAILED (kernel not usable for this checkpoint)"
   done
 done

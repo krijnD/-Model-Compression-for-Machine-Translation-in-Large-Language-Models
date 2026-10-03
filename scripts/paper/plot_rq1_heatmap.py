@@ -1,11 +1,10 @@
 """Paper figure for RQ1: XCOMET-XXL change vs fp16 per direction and bit-width, one ACL column wide.
 
-Reads outputs/baseline/<run>.tsv and writes francesco/paper/figures/rq1_xcomet_delta.pdf.
+Reads results/scores/<run>.tsv and writes paper/figures/rq1_xcomet_delta.pdf.
 Colour saturates at -40 so the uneven w3 row stays readable next to w2; every cell is annotated.
-Usage: python francesco/analysis/plot_rq1_heatmap.py
+Usage: python scripts/paper/plot_rq1_heatmap.py
 """
 import csv
-from pathlib import Path
 
 import matplotlib
 matplotlib.use("Agg")
@@ -13,16 +12,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Rectangle
 
-REPO = Path(__file__).resolve().parents[2]
-BASE = Path("/gpfs/home6/scur0517/outputs/baseline")
-OUT = REPO / "francesco/paper/figures/rq1_xcomet_delta.pdf"
+from mtcompress.paths import FIGURES, SCORES
+
+OUT = FIGURES / "rq1_xcomet_delta.pdf"
 RUNS = {"fp16": "ours-beam", "w8": "gptq-w8g128", "w4": "gptq-w4g128", "w3": "gptq-w3g128", "w2": "gptq-w2g128"}
 PAIRS = "de-en cs-en is-en zh-en ru-en en-de en-cs en-is en-zh en-ru".split()
 METRIC = "xcomet-xxl"
 
 
 def load(run):
-    rows = csv.DictReader(open(BASE / f"{run}.tsv"), delimiter="\t")
+    rows = csv.DictReader(open(SCORES / f"{run}.tsv"), delimiter="\t")
     return {r["pair"]: float(r[run]) for r in rows if r["metric"] == METRIC and r[run] not in ("", "-")}
 
 

@@ -12,16 +12,16 @@
 #   w3as4kd/ w2as4kd: the repacked 4-bit-container copies (ExllamaV2): what the generations actually ran on
 # Adapters are held in fp32, as in generate_lora.py. Output: results/json/probe16_<tag>.json.
 # Peak memory doesn't depend on the GPU model; s/line does, so time is only comparable on the same partition.
-#   sbatch --partition=gpu_a100 francesco/analysis/sbatch/probe_adapter.job
+#   sbatch --partition=gpu_a100 slurm/probe_adapter.job
 #   ONLY=w2kd BATCHES=1:2 SUFFIX=_b1 ... : one config, other batch sizes (":" separated), probe16_<tag><SUFFIX>.json
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 VENV=venv-quant
-source scripts/snellius/env.sh
+source slurm/env.sh
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
 
-M="$PROJECT_DIR/models"; S="/scratch-shared/$USER/models"
+M="$PROJECT_DIR/models"; S="$ARTIFACTS_DIR"
 A3="$S/ALMA-13B-R-gptq-w3g128-kd-lora"; A2="$S/ALMA-13B-R-gptq-w2g128-kd-lora-r64-cont"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 for spec in "w3kd:$M/ALMA-13B-R-gptq-w3g128:$A3" "w2kd:$M/ALMA-13B-R-gptq-w2g128:$A2" \
@@ -29,10 +29,10 @@ for spec in "w3kd:$M/ALMA-13B-R-gptq-w3g128:$A3" "w2kd:$M/ALMA-13B-R-gptq-w2g128
   IFS=: read -r tag model adapter <<< "$spec"
   [ -n "${ONLY:-}" ] && [ "$tag" != "$ONLY" ] && continue
   echo "----- $tag $(date +%H:%M:%S)"
-  python francesco/analysis/run_probe.py --model "$model" --adapter "$adapter" --pair de-en \
+  python scripts/analysis/run_probe.py --model "$model" --adapter "$adapter" --pair de-en \
     --batches "$(echo "${BATCHES:-4,16}" | tr ':' ',')" --reps "${REPS:-3}" --max-source-length 256 \
     --max-new-tokens 256 --num-beams 5 --dtype bfloat16 \
-    --out "$REPO_DIR/francesco/results/json/probe16_${tag}${SUFFIX:-}.json" \
+    --out "$REPO_DIR/results/json/probe16_${tag}${SUFFIX:-}.json" \
     || echo "##### $tag FAILED (see above)"
 done
 echo "##### done ($(date))"

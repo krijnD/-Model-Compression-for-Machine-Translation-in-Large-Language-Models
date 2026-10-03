@@ -4,7 +4,7 @@ BLEU uses the ALMA-R paper's settings (third_party/ALMA/evals/eval_generation.sh
 sacrebleu corpus BLEU, tokenizer "zh" for Chinese targets, otherwise "13a".
 Hallucination: candidate at least 2x as long as the reference, in characters.
 
-Usage (from the repo root, venv active): python scripts/score_lexical.py --run ours
+Usage (from the repo root, venv active): python scripts/reproduce/score_lexical.py --run ours
 """
 import argparse
 from pathlib import Path
@@ -17,7 +17,7 @@ TESTSET = REPO / "third_party/ALMA/outputs/wmt22_outputs/wmt-testset"
 PAIRS = "de-en,cs-en,is-en,zh-en,ru-en,en-de,en-cs,en-is,en-zh,en-ru".split(",")
 
 
-def hyp_path(run, src, tgt):  # same mapping as hyp_path in scripts/snellius/env.sh
+def hyp_path(run, src, tgt):  # same mapping as hyp_path in slurm/env.sh
     fixed = {
         "paper": REPO / f"third_party/ALMA/outputs/wmt22_outputs/ALMA-13B-R/{src}{tgt}/test.{src}-{tgt}.{tgt}",
         "ours": OUTPUTS / f"alma-13b-r/wmt22/test-{src}-{tgt}",

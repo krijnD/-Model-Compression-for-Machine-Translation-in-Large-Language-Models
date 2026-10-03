@@ -8,7 +8,7 @@ For each direction: resample the test sentences with replacement B times, using 
 Derived quantities, also computed inside every resample:
   recovered = (kd - base) / (fp16 - base)     base = plain quantized model on the same kernel (w3) / plain w2
   kd - w4, kd - plain w3                       with P(diff <= 0) = share of resamples where the gain vanishes
-CPU only (login node is fine): ../venv/bin/python francesco/analysis/bootstrap_ci.py [--B 1000]
+CPU only (login node is fine): ../venv/bin/python scripts/analysis/bootstrap_ci.py [--B 1000]
 Output: results/json/bootstrap_ci.json and a printed table.
 """
 import argparse
@@ -21,7 +21,7 @@ from sacrebleu.metrics import BLEU
 REPO = Path(__file__).resolve().parents[2]
 OUT = REPO.parent / "outputs"
 TESTSET = REPO / "third_party/ALMA/outputs/wmt22_outputs/wmt-testset"
-J = REPO / "francesco/results/json"
+J = REPO / "results/json"
 
 # system name -> (generation folder, xcomet folder)
 SYS = {"fp16": ("alma-13b-r-beam", "ours-beam"), "w4": ("gptq-w4g128", "gptq-w4g128"),
@@ -74,7 +74,7 @@ def main():
     for study, (pairs, systems, kd, base, extra) in STUDIES.items():
         for pair in pairs:
             s, t = pair.split("-")
-            bleu = BLEU(tokenize="zh" if t == "zh" else "13a")  # as scripts/score_lexical.py
+            bleu = BLEU(tokenize="zh" if t == "zh" else "13a")  # as scripts/reproduce/score_lexical.py
             refs = lines(TESTSET / f"{s}{t}/test.{pair}.{t}")
             n = len(refs)
             stats = {k: bleu_stats(bleu, lines(OUT / SYS[k][0] / "wmt22" / f"test-{pair}"), refs) for k in systems}

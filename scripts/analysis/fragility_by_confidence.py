@@ -6,7 +6,7 @@ reference-free KIWI-XXL score (a different metric than the damage one, so a shar
 does not create the correlation by itself). w8 is the null run (no quality change), so the same
 statistic computed on w8 gives the regression-to-the-mean floor the w3 number must beat.
 
-  python francesco/analysis/fragility_by_confidence.py [--bits 3] [--bins 5]
+  python scripts/analysis/fragility_by_confidence.py [--bits 3] [--bins 5]
 """
 import argparse
 import json

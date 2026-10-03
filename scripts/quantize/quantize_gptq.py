@@ -2,13 +2,13 @@
 
 Quantized: every Linear inside the decoder layers (self_attn q/k/v/o_proj, mlp gate/up/down_proj),
 which is GPTQModel's Llama definition. Kept in fp16: embed_tokens, the RMSNorms and lm_head.
-Calibration: ALMA's human-written parallel train data in its fine-tuning format (scripts/alma_prompt.py).
+Calibration: ALMA's human-written parallel train data in its fine-tuning format (mtcompress/alma_prompt.py).
 
 Output: <out-root>/<model folder name>-gptq-w<bits>g<group>[-sym]/ (e.g. models/ALMA-13B-R-gptq-w4g128/)
 with the packed weights, quantize_config.json, the original tokenizer and generation_config files,
 and quant_meta.json (all settings of the run).
 
-Usage (venv-quant, one GPU): python scripts/quantize_gptq.py --bits 2 3 4 8
+Usage (venv-quant, one GPU): python scripts/quantize/quantize_gptq.py --bits 2 3 4 8
 """
 import argparse
 import json

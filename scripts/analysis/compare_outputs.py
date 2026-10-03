@@ -4,11 +4,11 @@ Written for the lossless 3->4-bit repack (repack_to_w4.py): the repacked checkpo
 exactly the same weights, but ExLlamaV2 computes in fp16 with its own reduction order while the
 scored w3 grid ran TorchQuantLinear in bf16, so beam search may still pick different outputs. This
 reports, over the first N lines both folders have: exact-match rate, corpus BLEU and chrF++ of each
-against the reference (the ALMA-R paper settings, same as scripts/score_lexical.py), the
+against the reference (the ALMA-R paper settings, same as scripts/reproduce/score_lexical.py), the
 hallucination rate (candidate >= 2x reference length), and BLEU of one output against the other.
 
-  python francesco/analysis/compare_outputs.py --a ../outputs/gptq-w3g128/wmt22 \\
-      --b ../outputs/repack-check/w3as4 --pairs de-en,en-is --lines 200 --out results/json/x.json
+  python scripts/analysis/compare_outputs.py --a $OUTPUTS_DIR/gptq-w3g128/wmt22 \\
+      --b $OUTPUTS_DIR/repack-check/w3as4 --pairs de-en,en-is --lines 200 --out results/json/x.json
 Needs sacrebleu (the scoring venv, not venv-quant).
 """
 import argparse

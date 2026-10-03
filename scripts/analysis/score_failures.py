@@ -10,9 +10,9 @@
 - copy: output equals the source after lowercasing and dropping non-word characters, and the reference doesn't.
 - empty: no tokens. trunc: 0 < output tokens / reference tokens < 0.5.
 Tokens are sacrebleu's (13a; "zh" for Chinese, which splits CJK characters).
-Usage: python francesco/analysis/score_failures.py [--runs a b c] [--lid /path/lid218e.bin]
+Usage: python scripts/analysis/score_failures.py [--runs a b c] [--lid /path/lid218e.bin]
 Writes outputs/failures/<run>/summary.tsv, flagged segment ids in outputs/failures/<run>/<pair>.json and
-francesco/results/json/failures.json.
+results/json/failures.json.
 """
 import argparse
 import json
@@ -28,7 +28,7 @@ from sacrebleu.tokenizers.tokenizer_zh import TokenizerZh
 REPO = Path(__file__).resolve().parents[2]
 OUTPUTS = REPO.parent / "outputs"
 TESTSET = REPO / "third_party/ALMA/outputs/wmt22_outputs/wmt-testset"
-J = REPO / "francesco/results/json"
+J = REPO / "results/json"
 PAIRS = "de-en,cs-en,is-en,zh-en,ru-en,en-de,en-cs,en-is,en-zh,en-ru".split(",")
 RUNS = ["ours-beam", "gptq-w8g128", "gptq-w4g128", "gptq-w3g128", "gptq-w3g128-as4-kd", "gptq-w2g128",
         "gptq-w2g128-as4-kd-r64", "gptq-w2g128-as4-kd-r64-cont"]
@@ -53,7 +53,7 @@ def norm(s):
     return re.sub(r"\W+", "", s.lower())
 
 
-def hyp_path(run, src, tgt):  # same mapping as scripts/score_lexical.py
+def hyp_path(run, src, tgt):  # same mapping as scripts/reproduce/score_lexical.py
     fixed = {"ours": OUTPUTS / f"alma-13b-r/wmt22/test-{src}-{tgt}",
              "ours-beam": OUTPUTS / f"alma-13b-r-beam/wmt22/test-{src}-{tgt}"}
     return fixed.get(run, OUTPUTS / f"{run}/wmt22/test-{src}-{tgt}")
