@@ -1,0 +1,55 @@
+{
+ "r": 64,
+ "alpha": 128.0,
+ "targets": [
+  "q_proj",
+  "k_proj",
+  "v_proj",
+  "o_proj",
+  "gate_proj",
+  "up_proj",
+  "down_proj"
+ ],
+ "student": "models/ALMA-13B-R-gptq-w2g128",
+ "teacher": "models/ALMA-13B-R",
+ "steps": 936,
+ "args": {
+  "teacher": "models/ALMA-13B-R",
+  "student": "models/ALMA-13B-R-gptq-w2g128",
+  "out": "models/ALMA-13B-R-gptq-w2g128-kd-lora-r64",
+  "n_examples": 30000,
+  "is_repeat": 2,
+  "heldout": 32,
+  "max_len": 256,
+  "r": 64,
+  "alpha": 128.0,
+  "targets": "q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj",
+  "lr": 0.0002,
+  "warmup": 0.03,
+  "micro_batch": 16,
+  "grad_accum": 2,
+  "epochs": 1,
+  "max_steps": null,
+  "eval_every": 200,
+  "kd_weight": 1.0,
+  "ce_weight": 0.0,
+  "no_grad_ckpt": false,
+  "seed": 42,
+  "device": "cuda:0"
+ },
+ "data": {
+  "de-en": 2760,
+  "cs-en": 2753,
+  "is-en": 3954,
+  "zh-en": 2755,
+  "ru-en": 2761,
+  "en-de": 2761,
+  "en-cs": 2761,
+  "en-is": 3954,
+  "en-zh": 2760,
+  "en-ru": 2761
+ },
+ "student_kernels": [
+  "TorchQuantLinear"
+ ]
+}

@@ -1,0 +1,36 @@
+{
+ "model": "models/ALMA-13B-R-gptq-w2g128",
+ "adapter": "models/ALMA-13B-R-gptq-w2g128-kd-lora-r64-cont",
+ "kernels": [
+  "TritonV2QuantLinear"
+ ],
+ "quant_linears": 280,
+ "pair": "de-en",
+ "reps": 2,
+ "per_batch": {
+  "1": {
+   "batch": 1,
+   "times_s": [
+    1.607,
+    1.6
+   ],
+   "median_s": 1.604,
+   "s_per_seq_sent": 1.604,
+   "peak_alloc_mib": 6087.1,
+   "peak_reserved_mib": 6178.0
+  },
+  "2": {
+   "batch": 2,
+   "times_s": [
+    2.554,
+    2.55
+   ],
+   "median_s": 2.552,
+   "s_per_seq_sent": 1.276,
+   "peak_alloc_mib": 7340.6,
+   "peak_reserved_mib": 7378.0
+  }
+ },
+ "dequant_once_s": 2.7665,
+ "dequant_modules": 280
+}

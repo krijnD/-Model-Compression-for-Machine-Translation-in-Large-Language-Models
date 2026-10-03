@@ -1,0 +1,37 @@
+{
+ "model": "models/ALMA-13B-R-gptq-w3g128",
+ "kernels": [
+  "TorchQuantLinear"
+ ],
+ "quant_linears": 280,
+ "pair": "de-en",
+ "reps": 3,
+ "per_batch": {
+  "4": {
+   "batch": 4,
+   "times_s": [
+    4.769,
+    4.752,
+    4.751
+   ],
+   "median_s": 4.752,
+   "s_per_seq_sent": 1.188,
+   "peak_alloc_mib": 10390.2,
+   "peak_reserved_mib": 11910.0
+  },
+  "16": {
+   "batch": 16,
+   "times_s": [
+    6.843,
+    6.834,
+    6.839
+   ],
+   "median_s": 6.839,
+   "s_per_seq_sent": 0.427,
+   "peak_alloc_mib": 23894.8,
+   "peak_reserved_mib": 29778.0
+  }
+ },
+ "dequant_once_s": 1.3764,
+ "dequant_modules": 280
+}

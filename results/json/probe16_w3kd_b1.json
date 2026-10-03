@@ -1,0 +1,26 @@
+{
+ "model": "models/ALMA-13B-R-gptq-w3g128",
+ "adapter": "models/ALMA-13B-R-gptq-w3g128-kd-lora",
+ "kernels": [
+  "TorchQuantLinear"
+ ],
+ "quant_linears": 280,
+ "pair": "de-en",
+ "reps": 3,
+ "per_batch": {
+  "1": {
+   "batch": 1,
+   "times_s": [
+    2.626,
+    2.622,
+    2.622
+   ],
+   "median_s": 2.622,
+   "s_per_seq_sent": 2.622,
+   "peak_alloc_mib": 7167.5,
+   "peak_reserved_mib": 7430.0
+  }
+ },
+ "dequant_once_s": 1.406,
+ "dequant_modules": 280
+}

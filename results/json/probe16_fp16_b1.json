@@ -1,0 +1,24 @@
+{
+ "model": "models/ALMA-13B-R",
+ "adapter": null,
+ "kernels": [],
+ "quant_linears": 0,
+ "pair": "de-en",
+ "reps": 3,
+ "per_batch": {
+  "1": {
+   "batch": 1,
+   "times_s": [
+    0.645,
+    0.644,
+    0.643
+   ],
+   "median_s": 0.644,
+   "s_per_seq_sent": 0.644,
+   "peak_alloc_mib": 25986.2,
+   "peak_reserved_mib": 26346.0
+  }
+ },
+ "dequant_once_s": null,
+ "dequant_modules": 0
+}

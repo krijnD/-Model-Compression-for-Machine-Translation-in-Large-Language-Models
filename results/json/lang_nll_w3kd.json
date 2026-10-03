@@ -1,0 +1,42 @@
+{
+ "tag": "w3kd",
+ "model": "models/ALMA-13B-R-gptq-w3g128",
+ "adapter": "models/ALMA-13B-R-gptq-w3g128-kd-lora",
+ "limit": 500,
+ "nll": {
+  "mono:is": 1.8124245078453889,
+  "mono:en": 2.8595178311855363,
+  "trans:is-en": 0.7564031385324224,
+  "trans:en-is": 0.6172501261995025,
+  "mono:de": 2.760748588808454,
+  "trans:de-en": 1.1969772031911192,
+  "trans:en-de": 0.7212959480812051,
+  "mono:cs": 2.279650724932307,
+  "trans:cs-en": 0.6463060084732316,
+  "trans:en-cs": 0.7421611949617661,
+  "mono:zh": 1.8600127533171078,
+  "trans:zh-en": 1.2822146778991053,
+  "trans:en-zh": 0.6915865496945999,
+  "mono:ru": 2.114520353770445,
+  "trans:ru-en": 0.7926096995764977,
+  "trans:en-ru": 0.7023537920310295
+ },
+ "tokens": {
+  "mono:is": 24645,
+  "mono:en": 13822,
+  "trans:is-en": 13631,
+  "trans:en-is": 33672,
+  "mono:de": 14798,
+  "trans:de-en": 11657,
+  "trans:en-de": 17392,
+  "mono:cs": 21247,
+  "trans:cs-en": 13513,
+  "trans:en-cs": 20270,
+  "mono:zh": 27914,
+  "trans:zh-en": 17103,
+  "trans:en-zh": 20731,
+  "mono:ru": 18426,
+  "trans:ru-en": 12765,
+  "trans:en-ru": 18473
+ }
+}

@@ -1,0 +1,97 @@
+pair	metric	ours	paper_reported	paper
+de-en	bleu	31.59	30.89	30.94
+de-en	chrf	55.25		54.68
+de-en	comet-22	84.99	84.95	84.94
+de-en	kiwi-22	81.69	81.50	81.50
+de-en	kiwi-xxl	84.43	83.97	83.96
+de-en	xcomet-xxl	94.67	94.20	94.20
+de-en	metricx-24	2.95		3.00
+de-en	halluc	0.05		0.05
+cs-en	bleu	44.85	44.39	44.29
+cs-en	chrf	67.30		66.72
+cs-en	comet-22	86.99	86.85	86.85
+cs-en	kiwi-22	82.76	82.63	82.62
+cs-en	kiwi-xxl	84.18	83.75	83.74
+cs-en	xcomet-xxl	88.63	88.03	88.03
+cs-en	metricx-24	3.70		3.76
+cs-en	halluc	0.07		0.07
+is-en	bleu	40.15	39.67	39.65
+is-en	chrf	61.65		61.39
+is-en	comet-22	87.24	87.14	87.14
+is-en	kiwi-22	81.67	81.57	81.57
+is-en	kiwi-xxl	85.93	85.73	85.72
+is-en	xcomet-xxl	81.12	80.49	80.49
+is-en	metricx-24	3.36		3.38
+is-en	halluc	0.00		0.00
+zh-en	bleu	22.99	23.23	23.21
+zh-en	chrf	52.24		51.91
+zh-en	comet-22	81.60	81.64	81.63
+zh-en	kiwi-22	79.54	79.24	79.24
+zh-en	kiwi-xxl	77.50	77.17	77.16
+zh-en	xcomet-xxl	91.91	91.65	91.65
+zh-en	metricx-24	1.65		1.70
+zh-en	halluc	0.48		0.27
+ru-en	bleu	39.65	39.06	38.95
+ru-en	chrf	64.21		63.53
+ru-en	comet-22	85.60	85.45	85.45
+ru-en	kiwi-22	81.88	81.72	81.72
+ru-en	kiwi-xxl	81.76	81.54	81.53
+ru-en	xcomet-xxl	91.55	91.18	91.18
+ru-en	metricx-24	2.75		2.81
+ru-en	halluc	0.15		0.05
+en-de	bleu	27.88	27.72	27.64
+en-de	chrf	55.53		54.77
+en-de	comet-22	86.88	86.40	86.39
+en-de	kiwi-22	83.68	83.28	83.28
+en-de	kiwi-xxl	85.25	84.25	84.24
+en-de	xcomet-xxl	97.70	97.48	97.47
+en-de	metricx-24	0.68		0.74
+en-de	halluc	0.20		0.05
+en-cs	bleu	26.16	26.32	26.25
+en-cs	chrf	52.30		51.54
+en-cs	comet-22	90.52	90.29	90.29
+en-cs	kiwi-22	85.40	84.99	84.99
+en-cs	kiwi-xxl	88.53	87.06	87.05
+en-cs	xcomet-xxl	94.42	93.61	93.60
+en-cs	metricx-24	2.72		2.94
+en-cs	halluc	0.49		0.10
+en-is	bleu	22.17	22.88	22.85
+en-is	chrf	50.52		50.21
+en-is	comet-22	87.12	86.85	86.85
+en-is	kiwi-22	82.58	82.18	82.18
+en-is	kiwi-xxl	86.58	85.68	85.67
+en-is	xcomet-xxl	93.27	91.93	91.92
+en-is	metricx-24	3.24		3.37
+en-is	halluc	0.00		0.00
+en-zh	bleu	33.89	34.06	34.05
+en-zh	chrf	28.53		27.06
+en-zh	comet-22	87.05	86.86	86.85
+en-zh	kiwi-22	82.61	82.25	82.25
+en-zh	kiwi-xxl	85.25	84.32	84.31
+en-zh	xcomet-xxl	92.61	92.03	92.02
+en-zh	metricx-24	1.30		1.38
+en-zh	halluc	1.72		1.13
+en-ru	bleu	24.36	24.15	24.10
+en-ru	chrf	50.13		49.14
+en-ru	comet-22	88.78	88.30	88.29
+en-ru	kiwi-22	84.45	83.98	83.98
+en-ru	kiwi-xxl	88.27	87.37	87.36
+en-ru	xcomet-xxl	95.37	95.22	95.21
+en-ru	metricx-24	1.40		1.51
+en-ru	halluc	0.29		0.15
+avg_en-xx	bleu	26.89	27.03	26.98
+avg_en-xx	chrf	47.40		46.54
+avg_en-xx	comet-22	88.07	87.74	87.73
+avg_en-xx	kiwi-22	83.74	83.34	83.34
+avg_en-xx	kiwi-xxl	86.78	85.74	85.73
+avg_en-xx	xcomet-xxl	94.67	94.05	94.04
+avg_en-xx	metricx-24	1.87		1.99
+avg_en-xx	halluc	0.54		0.29
+avg_xx-en	bleu	35.85	35.45	35.41
+avg_xx-en	chrf	60.13		59.65
+avg_xx-en	comet-22	85.28	85.21	85.20
+avg_xx-en	kiwi-22	81.51	81.33	81.33
+avg_xx-en	kiwi-xxl	82.76	82.43	82.42
+avg_xx-en	xcomet-xxl	89.58	89.11	89.11
+avg_xx-en	metricx-24	2.88		2.93
+avg_xx-en	halluc	0.15		0.09

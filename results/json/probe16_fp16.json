@@ -1,0 +1,35 @@
+{
+ "model": "models/ALMA-13B-R",
+ "kernels": [],
+ "quant_linears": 0,
+ "pair": "de-en",
+ "reps": 3,
+ "per_batch": {
+  "4": {
+   "batch": 4,
+   "times_s": [
+    1.457,
+    1.435,
+    1.435
+   ],
+   "median_s": 1.435,
+   "s_per_seq_sent": 0.359,
+   "peak_alloc_mib": 29466.9,
+   "peak_reserved_mib": 31306.0
+  },
+  "16": {
+   "batch": 16,
+   "times_s": [
+    3.642,
+    3.615,
+    3.617
+   ],
+   "median_s": 3.617,
+   "s_per_seq_sent": 0.226,
+   "peak_alloc_mib": 43294.3,
+   "peak_reserved_mib": 48554.0
+  }
+ },
+ "dequant_once_s": null,
+ "dequant_modules": 0
+}

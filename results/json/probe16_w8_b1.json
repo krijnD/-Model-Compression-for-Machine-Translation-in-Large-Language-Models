@@ -1,0 +1,26 @@
+{
+ "model": "models/ALMA-13B-R-gptq-w8g128",
+ "adapter": null,
+ "kernels": [
+  "TritonV2QuantLinear"
+ ],
+ "quant_linears": 280,
+ "pair": "de-en",
+ "reps": 3,
+ "per_batch": {
+  "1": {
+   "batch": 1,
+   "times_s": [
+    1.127,
+    1.121,
+    1.114
+   ],
+   "median_s": 1.121,
+   "s_per_seq_sent": 1.121,
+   "peak_alloc_mib": 14278.0,
+   "peak_reserved_mib": 14350.0
+  }
+ },
+ "dequant_once_s": 2.7982,
+ "dequant_modules": 280
+}

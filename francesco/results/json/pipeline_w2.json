@@ -1,9 +1,0 @@
-{
- "full_b4": 18.815,
- "full_b16": 32.945,
- "cached_b4": 16.064,
- "cached_b16": 29.91,
- "dequant_one_pass_ms": 243.26,
- "coverage": 0.552,
- "model": "/gpfs/home6/scur0517/models/ALMA-13B-R-gptq-w2g128"
-}

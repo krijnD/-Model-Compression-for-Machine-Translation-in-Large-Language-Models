@@ -1,0 +1,71 @@
+{
+ "tag": "w4",
+ "model": "models/ALMA-13B-R-gptq-w4g128",
+ "dtype": "bfloat16",
+ "backend_arg": "triton",
+ "beams": 5,
+ "reps": 3,
+ "max_new_tokens": 256,
+ "nvml_before": [
+  "0, 0 MiB, 95830 MiB"
+ ],
+ "loader": "gptqmodel(triton)",
+ "kernels": [
+  "TritonV2QuantLinear"
+ ],
+ "quant_linears": 280,
+ "load_s": 9.5,
+ "load_peak_alloc_mib": 7315.7,
+ "load_peak_reserved_mib": 7326.0,
+ "weights_mib": 6918.9,
+ "weights_gib": 6.76,
+ "kv_mib_per_token": 0.7812,
+ "n_params": 328094720,
+ "phases": {
+  "short": {
+   "phase": "short",
+   "pair": "de-en",
+   "batch": 4,
+   "source_length": 256,
+   "input_len": 256,
+   "ok": true,
+   "walls_s": [
+    2.475,
+    2.471,
+    2.471
+   ],
+   "median_s": 2.471,
+   "s_per_line": 0.618,
+   "new_tokens_per_line": 32,
+   "out_tokens_per_s": 51.8,
+   "peak_alloc_mib": 11577.7,
+   "peak_reserved_mib": 12986.0,
+   "kv_mib_in_flight": 7999.5
+  },
+  "long_batch_probe": {
+   "phase": "long_batch_probe",
+   "pair": "zh-en",
+   "batch": 4,
+   "source_length": 512,
+   "input_len": 512,
+   "ok": true,
+   "walls_s": [
+    3.323,
+    3.317,
+    3.327
+   ],
+   "median_s": 3.323,
+   "s_per_line": 0.831,
+   "new_tokens_per_line": 37,
+   "out_tokens_per_s": 44.53,
+   "peak_alloc_mib": 16171.7,
+   "peak_reserved_mib": 17946.0,
+   "kv_mib_in_flight": 11999.2
+  }
+ },
+ "dequant_pass_ms": 2071.0,
+ "dequant_error": null,
+ "nvml_after": [
+  "0, 8273 MiB, 95830 MiB"
+ ]
+}

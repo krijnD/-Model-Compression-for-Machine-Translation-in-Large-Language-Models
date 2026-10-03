@@ -1,0 +1,41 @@
+{
+ "tag": "w2",
+ "model": "models/ALMA-13B-R-gptq-w2g128",
+ "limit": 500,
+ "nll": {
+  "mono:is": 6.412878242132025,
+  "mono:en": 5.725866938996567,
+  "trans:is-en": 5.4040710614892635,
+  "trans:en-is": 7.369381183851754,
+  "mono:de": 7.130375125501942,
+  "trans:de-en": 4.668365824086553,
+  "trans:en-de": 7.683014645966896,
+  "mono:cs": 6.9659982328387535,
+  "trans:cs-en": 5.196055152366298,
+  "trans:en-cs": 7.067656028382462,
+  "mono:zh": 4.657455552569807,
+  "trans:zh-en": 5.498762574034434,
+  "trans:en-zh": 7.168381281236245,
+  "mono:ru": 6.84661843372222,
+  "trans:ru-en": 5.354741394066876,
+  "trans:en-ru": 9.213491907028374
+ },
+ "tokens": {
+  "mono:is": 24645,
+  "mono:en": 13822,
+  "trans:is-en": 13631,
+  "trans:en-is": 33672,
+  "mono:de": 14798,
+  "trans:de-en": 11657,
+  "trans:en-de": 17392,
+  "mono:cs": 21247,
+  "trans:cs-en": 13513,
+  "trans:en-cs": 20270,
+  "mono:zh": 27914,
+  "trans:zh-en": 17103,
+  "trans:en-zh": 20731,
+  "mono:ru": 18426,
+  "trans:ru-en": 12765,
+  "trans:en-ru": 18473
+ }
+}

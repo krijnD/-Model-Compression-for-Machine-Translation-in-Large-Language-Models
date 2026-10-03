@@ -1,0 +1,119 @@
+{
+ "tag": "fp16",
+ "model": "models/ALMA-13B-R",
+ "dtype": "bfloat16",
+ "backend_arg": "auto",
+ "beams": 5,
+ "reps": 3,
+ "max_new_tokens": 256,
+ "nvml_before": [
+  "0, 0 MiB, 95830 MiB"
+ ],
+ "loader": "transformers",
+ "kernels": [],
+ "quant_linears": 0,
+ "load_s": 24.9,
+ "load_peak_alloc_mib": 24875.8,
+ "load_peak_reserved_mib": 26342.0,
+ "weights_mib": 24825.8,
+ "weights_gib": 24.24,
+ "kv_mib_per_token": 0.7812,
+ "n_params": 13015864320,
+ "phases": {
+  "short": {
+   "phase": "short",
+   "pair": "de-en",
+   "batch": 4,
+   "source_length": 256,
+   "input_len": 256,
+   "ok": true,
+   "walls_s": [
+    1.434,
+    1.435,
+    1.433
+   ],
+   "median_s": 1.434,
+   "s_per_line": 0.359,
+   "new_tokens_per_line": 30,
+   "out_tokens_per_s": 83.67,
+   "peak_alloc_mib": 29466.9,
+   "peak_reserved_mib": 32086.0,
+   "kv_mib_in_flight": 7999.5
+  },
+  "long": {
+   "phase": "long",
+   "pair": "zh-en",
+   "batch": 1,
+   "source_length": 512,
+   "input_len": 512,
+   "ok": true,
+   "walls_s": [
+    0.517,
+    0.516,
+    0.518
+   ],
+   "median_s": 0.517,
+   "s_per_line": 0.517,
+   "new_tokens_per_line": 10,
+   "out_tokens_per_s": 19.33,
+   "peak_alloc_mib": 27163.0,
+   "peak_reserved_mib": 27804.0,
+   "kv_mib_in_flight": 2999.8
+  },
+  "long_batch_probe": {
+   "phase": "long_batch_probe",
+   "pair": "zh-en",
+   "batch": 4,
+   "source_length": 512,
+   "input_len": 512,
+   "ok": true,
+   "walls_s": [
+    2.429,
+    2.428,
+    2.429
+   ],
+   "median_s": 2.429,
+   "s_per_line": 0.607,
+   "new_tokens_per_line": 36,
+   "out_tokens_per_s": 59.29,
+   "peak_alloc_mib": 34078.4,
+   "peak_reserved_mib": 36686.0,
+   "kv_mib_in_flight": 11999.2
+  }
+ },
+ "samples": {
+  "short": {
+   "phase": "short_samples",
+   "pair": "de-en",
+   "batch": 4,
+   "lines": 1984,
+   "source_length": 256,
+   "ok": true,
+   "wall_s": 864.0,
+   "s_per_line": 0.436,
+   "mean_new_tokens": 37.1,
+   "out_tokens_per_s": 85.15,
+   "peak_alloc_mib": 31492.9,
+   "peak_reserved_mib": 35166.0
+  },
+  "long": {
+   "phase": "long_samples",
+   "pair": "zh-en",
+   "batch": 1,
+   "lines": 256,
+   "source_length": 512,
+   "ok": true,
+   "wall_s": 376.5,
+   "s_per_line": 1.471,
+   "mean_new_tokens": 35.0,
+   "out_tokens_per_s": 23.82,
+   "peak_alloc_mib": 27715.0,
+   "peak_reserved_mib": 29846.0
+  }
+ },
+ "dequant_pass_ms": null,
+ "dequant_error": null,
+ "nvml_after": [
+  "0, 26549 MiB, 95830 MiB"
+ ]
+}
