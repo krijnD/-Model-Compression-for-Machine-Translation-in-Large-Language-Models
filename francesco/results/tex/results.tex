@@ -1,0 +1,88 @@
+% ALMA-13B-R weight-only GPTQ: the precision grid, tables and figures.
+%
+%   python francesco/analysis/make_report.py   # regenerate tables.tex, detail.tex, figures.tex
+%   pdflatex -output-directory=.. results.tex  # run this in francesco/results/tex/, twice
+%
+% tables.tex / detail.tex / figures.tex are generated -- edit make_report.py, not them.
+% figures.tex \includegraphics from ../figures/, the .pdf written by make_report.py.
+% To drop these into the paper instead, copy the preamble packages this file needs
+% (booktabs, xcolor with the table option, graphicx) and \input the three chunks.
+\documentclass[10pt]{article}
+\usepackage[table]{xcolor}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{geometry}
+\geometry{margin=2.2cm}
+\usepackage[hidelinks]{hyperref}
+
+\captionsetup{font=small,labelfont=bf}
+
+\title{ALMA-13B-R under weight-only GPTQ: 16 / 8 / 4 / 3 / 2 bits on WMT'22}
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+
+\section*{What is in here}
+
+ALMA-13B-R quantized by GPTQ (\texttt{GPTQModel} 4.2.5): weight-only, asymmetric,
+group size 128, act-order, every Linear of the 40 decoder layers quantized, embeddings /
+\texttt{lm\_head} / norms / scales left in fp16. Generation is beam 5, bf16, seed 42, the
+protocol of \texttt{ours-beam} (the fp16 reproduction, which is the baseline here), scored
+on WMT'22 for de, cs, zh, ru and WMT'21 for is. Table~\ref{tab:grid-avg} is the grid,
+Table~\ref{tab:grid-delta} the cost against fp16, Table~\ref{tab:sizes} the checkpoint
+sizes; per-direction numbers are in the appendix tables, and the raw
+\texttt{outputs/baseline/<run>.tsv} files stay the machine-readable copy.
+
+\section*{The grid}
+\input{tables}
+
+\clearpage
+\section*{What the quantization costs and buys}
+
+The quality side of this grid is Tables~\ref{tab:grid-avg}--\ref{tab:grid-delta}. This section is
+the other half of the same decision, measured on one H100 with the eval protocol's own shapes
+(\texttt{francesco/analysis/measure\_quant\_cost.py}, \texttt{sbatch/cost.sbatch} for the
+checkpoints, \texttt{sbatch/probe16.sbatch} for the batch sweep, plus each eval job's own log for
+the real grid times): what a checkpoint weighs, what it needs in VRAM, how fast it generates and
+what the grid paid in GPU-hours.
+
+On this stack the compression buys \emph{memory}, not time. Peak VRAM at the eval protocol falls
+28.8\,GiB (fp16) $\rightarrow$ 17.2 (w8) $\rightarrow$ 12.3 (w4) on the de-en shape, and per line
+nothing gets faster: 0.359\,s (fp16) $\rightarrow$ 0.603 (w8) $\rightarrow$ 0.461 (w4)
+$\rightarrow$ 1.188 (w3) $\rightarrow$ 4.709 (w2) on a byte-identical workload. The reason is the
+kernel rather than the bit width: GPTQModel's Triton and Torch linears dequantize the whole weight
+matrix to bf16 and then matmul, so a forward pass reads the packed weights \emph{and} writes and
+re-reads a full bf16 copy of them --- more HBM traffic than fp16, which reads its weights once. w4 is
+the exception that proves the rule: it is the one checkpoint that gets \texttt{ExllamaV2QuantLinear},
+and it is the only quantized row within 1.3$\times$ of fp16 per line. The spread across bit widths is
+the kernel lottery, not a smooth function of precision.
+
+The memory saving is also smaller than the disk saving, because the KV cache and the activations do
+not shrink with the weights: at fp16 the weights are 84\,\% of the de-en \texttt{BATCH=4} peak, at w4
+55\,\%, so each further step below 4 bits buys 1--2\,GiB of peak rather than the 3\,GiB the
+checkpoint loses --- while the quality cost of those steps rises from 0.6 XCOMET-XXL (w4) to 10.9
+(w3) to 53.8 (w2). That is the shape of the answer: w8 is free, w4 is cheap, w3 and w2 are not worth
+keeping on cost grounds alone, and the case for the grid is the low-resource-language experiment it
+was built to run, not throughput.
+
+\emph{Which kernel} GPTQModel auto-selected is the \texttt{kernel} column of
+Table~\ref{tab:cost}; Table~\ref{tab:backends} is the sweep over every kernel it will load for
+these checkpoints, including the ones that refuse them.
+
+\input{cost}
+
+\input{kernels}
+
+\clearpage
+\section*{Figures}
+\input{figures}
+
+\clearpage
+\section*{Per-direction numbers}
+\input{detail}
+
+\end{document}

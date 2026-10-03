@@ -1,0 +1,53 @@
+#!/bin/bash
+#SBATCH --job-name=probe-kernels
+#SBATCH --partition=gpu_h100
+#SBATCH --gpus-per-node=1
+#SBATCH --cpus-per-task=16
+#SBATCH --time=02:00:00
+#SBATCH --output=logs/slurm-%x-%j.out
+
+# Which GPTQModel kernel should each checkpoint run on? The eval jobs use BACKEND=auto, and on this
+# stack auto picks ExLlamaV2 for 4-bit (fused GEMM, reads the packed weights) but TritonV2 for 8 and
+# 2 bits and Torch for 3 - all three of which dequantize the whole matrix to bf16 and THEN matmul, so
+# they move more bytes per forward than fp16 does. Marlin supports 4 AND 8 bits with desc_act, so if
+# it loads, 8-bit may be the one precision where the compression is also a speed win.
+# Same fixed workload as cost.sbatch (de-en, source 256, beam 5, first four sentences, BATCH=4 and
+# the zh-en 512 @BATCH=4 shape), one process per (checkpoint, kernel), written to
+# results/json/backend_<tag>_<backend>.json so the quant_cost_*.json records are untouched.
+#   sbatch francesco/analysis/sbatch/backends.sbatch
+set -euo pipefail
+cd "$SLURM_SUBMIT_DIR"
+VENV=venv-quant
+source scripts/snellius/env.sh
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+export CUDA_DEVICE_ORDER=PCI_BUS_ID
+
+# checkpoint:backends - only combinations the installed kernels declare support for
+# (SUPPORTS_BITS / SUPPORTS_DESC_ACT in gptqmodel/nn_modules/qlinear/*.py; all our checkpoints are
+# group 128, desc_act=True, so BitBLAS (desc_act=False) is out).
+COMBOS="${COMBOS:-w8:marlin,marlin_fp16,triton,torch w4:exllamav2,marlin,marlin_fp16,exllama_v1,triton,torch w3:torch,exllama_eora w2:triton,torch,exllama_eora}"
+REPS="${REPS:-3}"
+
+echo "##### kernel sweep ($(date))"
+nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv,noheader
+for combo in $COMBOS; do
+  tag="${combo%%:*}"
+  backends="${combo#*:}"
+  for be in ${backends//,/ }; do
+    be="${be%,}"
+    case "$tag" in
+      fp16) model="$PROJECT_DIR/models/ALMA-13B-R" ;;
+      *)    model="$PROJECT_DIR/models/ALMA-13B-R-gptq-${tag}g128" ;;
+    esac
+    echo "----- $tag / $be ($(date +%H:%M:%S))"
+    python francesco/analysis/measure_quant_cost.py \
+      --model "$model" --tag "$tag" --backend "$be" --reps "$REPS" \
+      --phases short,long_batch_probe \
+      --short-pair de-en --short-batch 4 --short-source-length 256 \
+      --long-pair zh-en --long-batch 1 --long-batch-probe 4 --long-source-length 512 \
+      --max-new-tokens 256 --num-beams 5 --dtype bfloat16 \
+      --out "$REPO_DIR/francesco/results/json/backend_${tag}_${be}.json" \
+      || echo "##### $tag/$be FAILED (kernel not usable for this checkpoint)"
+  done
+done
+echo "##### done ($(date))"

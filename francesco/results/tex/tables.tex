@@ -1,0 +1,77 @@
+\begin{table*}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrrrrrrrr}
+\toprule
+& BLEU & chrF++ & COMET-22 & KIWI-22 & KIWI-XXL & XCOMET-XXL & MetricX-24 & Halluc. & GiB & ratio \\
+\midrule
+\multicolumn{11}{l}{\emph{en$\rightarrow$xx (5 directions)}} \\
+W2G128 & 0.03 & 3.41 & 29.74 & 23.56 & -2.12 & 32.27 & 10.40 & 47.43 & 3.8 & 6.41$\times$ \\
+W3G128 & 20.91 & 41.22 & 82.02 & 77.48 & 71.15 & 83.37 & 4.09 & 4.01 & 5.3 & 4.60$\times$ \\
+W4G128 & 25.71 & 46.81 & 87.71 & 83.45 & 85.87 & 93.79 & 1.95 & 0.81 & 6.8 & 3.59$\times$ \\
+W8G128 & 26.97 & 47.36 & 88.04 & 83.69 & 86.77 & 94.64 & 1.88 & 0.58 & 12.7 & 1.91$\times$ \\
+FP16 & 26.98 & 47.39 & 88.07 & 83.70 & 86.79 & 94.55 & 1.87 & 0.57 & 24.2 & 1.00$\times$ \\
+FP16 (sampling) & 26.89 & 47.40 & 88.07 & 83.74 & 86.78 & 94.67 & 1.87 & 0.54 & 24.2 & 1.00$\times$ \\
+\addlinespace
+\multicolumn{11}{l}{\emph{xx$\rightarrow$en (5 directions)}} \\
+W2G128 & 0.04 & 3.95 & 24.35 & 29.16 & -0.14 & 13.05 & 9.42 & 49.83 & 3.8 & 6.41$\times$ \\
+W3G128 & 25.63 & 50.70 & 78.39 & 75.27 & 68.12 & 73.34 & 5.34 & 0.74 & 5.3 & 4.60$\times$ \\
+W4G128 & 35.24 & 59.73 & 84.93 & 81.24 & 82.16 & 88.76 & 3.02 & 0.07 & 6.8 & 3.59$\times$ \\
+W8G128 & 35.83 & 60.16 & 85.29 & 81.51 & 82.78 & 89.59 & 2.88 & 0.16 & 12.7 & 1.91$\times$ \\
+FP16 & 35.82 & 60.14 & 85.29 & 81.50 & 82.74 & 89.57 & 2.88 & 0.16 & 24.2 & 1.00$\times$ \\
+FP16 (sampling) & 35.85 & 60.13 & 85.28 & 81.51 & 82.76 & 89.58 & 2.88 & 0.15 & 24.2 & 1.00$\times$ \\
+\addlinespace
+\midrule
+\multicolumn{11}{l}{\emph{ALMA-R paper (reported, their decoding)}} \\
+avg en$\rightarrow$xx & 27.03 & -- & 87.74 & 83.34 & 85.74 & 94.05 & -- & -- & & \\
+avg xx$\rightarrow$en & 35.45 & -- & 85.21 & 81.33 & 82.43 & 89.11 & -- & -- & & \\
+\bottomrule
+\end{tabular}
+\caption{ALMA-13B-R on WMT'22 (WMT'21 for \texttt{is}): weight-only GPTQ, asymmetric, group size 128, act-order, every decoder Linear quantized, beam 5, bf16, seed 42. FP16 is our beam-search reproduction (\texttt{ours-beam}); \texttt{FP16 (sampling)} is the paper's beam-sampling decoding and is \emph{not} the reference for the quantized rows. MetricX-24 and the hallucination rate (\% of sentences at least twice the reference length) are the two where lower is better. GiB is the checkpoint on disk, ratio the saving against FP16.}
+\label{tab:grid-avg}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+& BLEU & chrF++ & COMET-22 & KIWI-22 & KIWI-XXL & XCOMET-XXL & MetricX-24 & Halluc. \\
+\midrule
+\multicolumn{9}{l}{\emph{en$\rightarrow$xx}} \\
+W2G128 & \cellcolor{red!60}-26.94 & \cellcolor{red!60}-43.98 & \cellcolor{red!60}-58.33 & \cellcolor{red!60}-60.14 & \cellcolor{red!60}-88.91 & \cellcolor{red!60}-62.29 & \cellcolor{red!60}+8.53 & \cellcolor{red!60}+46.86 \\
+W3G128 & \cellcolor{red!14}-6.06 & \cellcolor{red!8}-6.17 & \cellcolor{red!6}-6.05 & \cellcolor{red!6}-6.22 & \cellcolor{red!11}-15.64 & \cellcolor{red!11}-11.18 & \cellcolor{red!16}+2.22 & \cellcolor{red!4}+3.44 \\
+W4G128 & \cellcolor{red!3}-1.27 & \cellcolor{red!1}-0.57 & -0.36 & -0.24 & \cellcolor{red!1}-0.92 & \cellcolor{red!1}-0.76 & \cellcolor{red!1}+0.08 & +0.23 \\
+W8G128 & -0.01 & -0.03 & -0.03 & -0.01 & -0.02 & +0.09 & 0.00 & +0.01 \\
+\addlinespace
+\multicolumn{9}{l}{\emph{xx$\rightarrow$en}} \\
+W2G128 & \cellcolor{red!60}-35.78 & \cellcolor{red!60}-56.18 & \cellcolor{red!60}-60.94 & \cellcolor{red!60}-52.34 & \cellcolor{red!60}-82.88 & \cellcolor{red!60}-76.53 & \cellcolor{red!60}+6.53 & \cellcolor{red!60}+49.67 \\
+W3G128 & \cellcolor{red!17}-10.19 & \cellcolor{red!10}-9.43 & \cellcolor{red!7}-6.90 & \cellcolor{red!7}-6.23 & \cellcolor{red!11}-14.62 & \cellcolor{red!13}-16.23 & \cellcolor{red!23}+2.46 & \cellcolor{red!1}+0.58 \\
+W4G128 & \cellcolor{red!1}-0.58 & -0.41 & -0.36 & -0.26 & -0.58 & \cellcolor{red!1}-0.81 & \cellcolor{red!1}+0.13 & -0.09 \\
+W8G128 & 0.00 & +0.02 & 0.00 & +0.01 & +0.04 & +0.02 & 0.00 & 0.00 \\
+\addlinespace
+\bottomrule
+\end{tabular}
+\caption{Difference against the FP16 beam baseline (Table~\ref{tab:grid-avg}): green is better than FP16, red is worse, saturation scaled to the largest change in that column. These are the numbers that say what the compression costs.}
+\label{tab:grid-delta}
+\end{table*}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+precision & bits & GiB & GB & vs FP16 \\
+\midrule
+W2G128 & 2 & 3.78 & 4.06 & 6.41$\times$ \\
+W3G128 & 3 & 5.27 & 5.66 & 4.60$\times$ \\
+W4G128 & 4 & 6.76 & 7.26 & 3.59$\times$ \\
+W8G128 & 8 & 12.72 & 13.65 & 1.91$\times$ \\
+FP16 & 16 & 24.24 & 26.03 & -- \\
+\bottomrule
+\end{tabular}
+\caption{Checkpoint size on disk. Only the 40 decoder layers' Linears are quantized; the embeddings, \texttt{lm\_head}, the norms and the scales and zero-points stay fp16, a fixed $\approx$0.8\,GiB floor. That is why the end-to-end ratio stays well under $16/b$ even at 2 bits (\texttt{quantization\_sizes.txt}).}
+\label{tab:sizes}
+\end{table}

@@ -1,0 +1,55 @@
+#!/bin/bash
+#SBATCH --job-name=gptq-eval
+#SBATCH --partition=gpu_h100
+#SBATCH --gpus-per-node=1
+#SBATCH --cpus-per-task=16
+#SBATCH --time=20:00:00
+#SBATCH --output=logs/slurm-%x-%j.out
+
+# End-to-end evaluation of one GPTQ-quantized ALMA-13B-R in a single job on 1 GPU:
+#   1. generate      generate_quantized.job (venv-quant)      -> outputs/$QUANT/wmt22
+#   2. COMET family  score_comet.job, the 4 metrics in turn    -> outputs/{xcomet-xxl,kiwi-xxl,kiwi-22,comet-22}/$QUANT
+#   3. MetricX-24    score_metricx.job                         -> outputs/metricx-24/$QUANT
+#   4. lexical       score_lexical.py (BLEU, chrF++, halluc)   -> outputs/{bleu,chrf,halluc}/$QUANT
+#   5. summary       summarize.py --vs $VS                     -> outputs/baseline/$QUANT.tsv
+# Time: generation ~10+ h, scoring ~1.5 h. If the job hits the time limit, resubmit the same command:
+# finished directions and finished metrics are skipped.
+#   QUANT=gptq-w4g128 : model folder models/ALMA-13B-R-$QUANT (required)
+#   DECODING=paper    : beam sampling instead of plain beam search; the run becomes $QUANT-paper
+#   VS=ours-beam      : run to compare with in the summary (default ours-beam, or ours for DECODING=paper)
+# Usage: for q in gptq-w2g128 gptq-w3g128 gptq-w4g128 gptq-w8g128; do
+#          sbatch --export=ALL,QUANT=$q scripts/snellius/eval_quantized.job; done
+
+set -euo pipefail
+source scripts/snellius/env.sh
+
+export QUANT="${QUANT:?set QUANT, e.g. QUANT=gptq-w4g128}"
+export DECODING="${DECODING:-beam}"
+case "$DECODING" in
+  beam)  export RUN="$QUANT";       VS="${VS:-ours-beam}" ;;
+  paper) export RUN="$QUANT-paper"; VS="${VS:-ours}" ;;
+  *) echo "ERROR: DECODING must be beam or paper"; exit 1 ;;
+esac
+
+# A metric is done when its summary.tsv has the header plus one line per direction.
+done_metric() { local f="$OUTPUT_ROOT/$1/$RUN/summary.tsv"; [ -f "$f" ] && [ "$(awk 'END{print NR}' "$f")" -eq 11 ]; }
+
+echo "##### 1/5 generate $RUN ($(date))"
+bash scripts/snellius/generate_quantized.job   # exits non-zero if a direction is incomplete
+
+COMET_METRICS=(xcomet-xxl kiwi-xxl kiwi-22 comet-22)   # same order as in score_comet.job
+for i in "${!COMET_METRICS[@]}"; do
+  echo "##### 2/5 ${COMET_METRICS[$i]} ($(date))"
+  if done_metric "${COMET_METRICS[$i]}"; then echo "Skipping: already scored"; continue; fi
+  SLURM_ARRAY_TASK_ID=$i bash scripts/snellius/score_comet.job
+done
+
+echo "##### 3/5 metricx-24 ($(date))"
+if done_metric metricx-24; then echo "Skipping: already scored"; else bash scripts/snellius/score_metricx.job; fi
+
+source scripts/snellius/env.sh   # back to venv (the steps above run in their own shells)
+echo "##### 4/5 lexical ($(date))"
+python scripts/score_lexical.py --run "$RUN"
+
+echo "##### 5/5 summary ($(date))"
+python scripts/summarize.py --run "$RUN" --vs "$VS"

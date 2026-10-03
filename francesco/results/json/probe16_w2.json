@@ -1,0 +1,37 @@
+{
+ "model": "/gpfs/home6/scur0517/models/ALMA-13B-R-gptq-w2g128",
+ "kernels": [
+  "TritonV2QuantLinear"
+ ],
+ "quant_linears": 280,
+ "pair": "de-en",
+ "reps": 3,
+ "per_batch": {
+  "4": {
+   "batch": 4,
+   "times_s": [
+    18.958,
+    18.836,
+    18.813
+   ],
+   "median_s": 18.836,
+   "s_per_seq_sent": 4.709,
+   "peak_alloc_mib": 12029.1,
+   "peak_reserved_mib": 14460.0
+  },
+  "16": {
+   "batch": 16,
+   "times_s": [
+    33.172,
+    33.12,
+    32.929
+   ],
+   "median_s": 33.12,
+   "s_per_seq_sent": 2.07,
+   "peak_alloc_mib": 36264.9,
+   "peak_reserved_mib": 52668.0
+  }
+ },
+ "dequant_once_s": 2.5838,
+ "dequant_modules": 280
+}

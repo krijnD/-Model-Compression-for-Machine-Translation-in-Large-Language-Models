@@ -1,0 +1,67 @@
+#!/bin/bash
+#SBATCH --job-name=gptq-gen
+#SBATCH --partition=gpu_h100
+#SBATCH --gpus-per-node=1
+#SBATCH --cpus-per-task=16
+#SBATCH --time=16:00:00
+#SBATCH --output=logs/slurm-%x-%j.out
+
+# Translate WMT'22 (WMT'21 for is) with a GPTQ-quantized ALMA-13B-R written by quantize_gptq.job.
+# Same settings as generate_alma_r.job (beam 5, bf16, seed 42, 256 new tokens, source length 256,
+# 512 for zh-en with batch 1), but through scripts/generate_quantized.py because run_llmmt.py can't
+# load GPTQ weights (see README). Runs on 1 GPU (shorter queue than 4); if it hits the time limit,
+# resubmit the same command: finished directions are skipped.
+#   QUANT=gptq-w4g128 : model folder models/ALMA-13B-R-$QUANT, output outputs/$QUANT/wmt22 (= RUN for scoring)
+#   DECODING=beam     : plain beam search, compare with RUN=ours-beam (default)
+#   DECODING=paper    : the model's generation_config (beam sampling); output outputs/$QUANT-paper/wmt22
+# Usage: for q in gptq-w2g128 gptq-w3g128 gptq-w4g128 gptq-w8g128; do
+#          sbatch --export=ALL,QUANT=$q scripts/snellius/generate_quantized.job; done
+
+set -euo pipefail
+VENV=venv-quant
+source scripts/snellius/env.sh
+
+QUANT="${QUANT:?set QUANT, e.g. QUANT=gptq-w4g128}"
+MODEL="${MODEL:-$PROJECT_DIR/models/ALMA-13B-R-$QUANT}"
+DECODING="${DECODING:-beam}"
+case "$DECODING" in
+  beam)  OUT="${OUT:-$OUTPUT_ROOT/$QUANT/wmt22}" ;;
+  paper) OUT="${OUT:-$OUTPUT_ROOT/$QUANT-paper/wmt22}" ;;
+  *) echo "ERROR: DECODING must be beam or paper"; exit 1 ;;
+esac
+[ -f "$MODEL/quantize_config.json" ] || { echo "ERROR: $MODEL is not a quantized model folder"; exit 1; }
+echo "Decoding: $DECODING | model: $MODEL | output: $OUT"
+cat "$MODEL/quant_meta.json"
+
+# Skip directions whose output file is already complete, so a job that hit the time limit can
+# simply be resubmitted. generate_quantized.py writes a file only when its direction is finished.
+todo() {  # $1 = comma-separated pairs -> the ones still missing, comma-separated
+  local pair out=""
+  for pair in ${1//,/ }; do
+    local hyp="$OUT/test-$pair"
+    if [ -f "$hyp" ] && [ "$(awk 'END{print NR}' "$hyp")" -eq "$(awk 'END{print NR}' "$(src_path "$pair")")" ]; then
+      echo "Skipping $pair: $hyp is complete" >&2
+    else
+      out="${out:+$out,}$pair"
+    fi
+  done
+  echo "$out"
+}
+
+generate() {  # $1 = language pairs, $2 = max_source_length, $3 = batch size
+  [ -z "$1" ] && return 0
+  python scripts/generate_quantized.py \
+    --model "$MODEL" --pairs "$1" --out "$OUT" --decoding "$DECODING" \
+    --max-source-length "$2" --batch-size "$3" \
+    --max-new-tokens 256 --num-beams 5 --dtype bfloat16 --seed 42
+}
+
+# One GPU, all directions in sequence (the 9 short ones in a single model load, then zh-en with
+# source length 512 and batch 1, as in generate_alma_r.job). The fp16 baseline took ~10 GPU-hours.
+mkdir -p "$OUT"
+PAIRS_SHORT="$(todo "${PAIRS_SHORT-${WMT22_PAIRS/zh-en,/}}")"
+PAIRS_LONG="$(todo "${PAIRS_LONG-zh-en}")"
+generate "$PAIRS_SHORT" 256 "${BATCH:-4}"
+generate "$PAIRS_LONG" 512 "${BATCH_LONG:-1}"
+
+check_translations "$OUT"

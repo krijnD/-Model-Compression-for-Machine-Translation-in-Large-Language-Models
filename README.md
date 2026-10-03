@@ -28,6 +28,7 @@ The venv, data and model weights live **next to** the repo, not inside it:
 <project dir>/
 ├── Model-Compression-MT/   # this repo (code only)
 ├── venv/                   # Python environment
+├── venv-quant/             # Python environment for GPTQ (see Quantization)
 ├── data/                   # datasets
 ├── hf_cache/               # Hugging Face models for the metrics (HF_HOME)
 ├── models/                 # LLM weights we translate with / quantize (ALMA-13B-R)
@@ -133,28 +134,28 @@ Submit all jobs **from the repo root**. `RUN` selects the translations to score:
 
 **Step 1: check the metrics.** Score the paper's own ALMA-13B-R translations. This should reproduce the paper's numbers (XCOMET-XXL is already done: 94.04 / 89.11):
 ```bash
-sbatch --array=1-3 --export=ALL,RUN=paper scripts/snellius/score_comet.slurm   # 0 xcomet-xxl, 1 kiwi-xxl, 2 kiwi-22, 3 comet-22
-sbatch --export=ALL,RUN=paper scripts/snellius/score_metricx.slurm
+sbatch --array=1-3 --export=ALL,RUN=paper scripts/snellius/score_comet.job   # 0 xcomet-xxl, 1 kiwi-xxl, 2 kiwi-22, 3 comet-22
+sbatch --export=ALL,RUN=paper scripts/snellius/score_metricx.job
 python scripts/score_lexical.py --run paper   # BLEU, chrF++, hallucination rate; seconds, fine on the login node
 python scripts/summarize.py --run paper
 ```
 
 **Step 2: generate** (4× H100, both jobs can run at the same time). At the end, each job checks that there is one translation per source sentence.
 ```bash
-sbatch scripts/snellius/generate_alma_r.slurm                             # -> outputs/alma-13b-r/wmt22
-sbatch --export=ALL,DECODING=beam scripts/snellius/generate_alma_r.slurm  # -> outputs/alma-13b-r-beam/wmt22
+sbatch scripts/snellius/generate_alma_r.job                             # -> outputs/alma-13b-r/wmt22
+sbatch --export=ALL,DECODING=beam scripts/snellius/generate_alma_r.job  # -> outputs/alma-13b-r-beam/wmt22
 ```
 It uses `<project dir>/models/ALMA-13B-R` by default; pass `MODEL=/path` for another folder.
 
 zh→en is translated last, with source length 512 and `BATCH_LONG=1` (all other directions use the paper's batch 4). At length 512, batch 4 × 5 beams runs the 13B model out of memory on a 94 GB H100. To redo only zh→en after a crash, keep the other 9 files and pass `PAIRS_SHORT=""`:
 ```bash
-sbatch --export=ALL,PAIRS_SHORT= scripts/snellius/generate_alma_r.slurm
+sbatch --export=ALL,PAIRS_SHORT= scripts/snellius/generate_alma_r.job
 ```
 
 **Step 3: score both runs** (for `RUN=ours` and `RUN=ours-beam`):
 ```bash
-sbatch --export=ALL,RUN=ours scripts/snellius/score_comet.slurm
-sbatch --export=ALL,RUN=ours scripts/snellius/score_metricx.slurm
+sbatch --export=ALL,RUN=ours scripts/snellius/score_comet.job
+sbatch --export=ALL,RUN=ours scripts/snellius/score_metricx.job
 python scripts/score_lexical.py --run ours
 ```
 
@@ -166,6 +167,53 @@ python scripts/summarize.py --run ours-beam --vs ours
 It prints all metrics per direction, the difference with the paper, and writes `outputs/baseline/<RUN>.tsv`.
 
 Job logs go to `logs/slurm-<job-name>-<id>.out` (gitignored; the folder must exist, Slurm won't create it). Follow a job with `squeue -u $USER` and `tail -f logs/slurm-<job-name>-<id>.out`.
+
+## Quantization (GPTQ)
+
+Weight-only GPTQ with [GPTQModel](https://github.com/ModelCloud/GPTQModel), stored as real packed integers (int32-packed weights + fp16 scales/zero-points), one checkpoint per bit width.
+
+- **What is quantized:** every Linear in the 40 decoder layers (attention `q/k/v/o_proj`, MLP `gate/up/down_proj`). `embed_tokens`, the RMSNorms and `lm_head` stay fp16.
+- **Default settings:** asymmetric, group size 128, act-order (`desc_act`), damping 0.05. Bits: 2, 3, 4 or 8. See `python scripts/quantize_gptq.py --help`.
+- **Calibration:** 1024 examples from ALMA's human-written parallel **train** data (`third_party/ALMA/human_written_data/*/train.*.json`: earlier WMT test sets + Flores, no overlap with the test sets), balanced over the 10 directions, in ALMA's fine-tuning format (`<s>` + prompt + target + `</s>`). Seed 42.
+- **Kernels:** GPTQModel picks one when loading (for asymmetric weights: ExLlamaV2/TorchFused can do 4-bit, Triton 2/4/8-bit, Torch all four). All run in bf16. The generation log prints the one that was used.
+
+### Separate environment
+
+GPTQModel needs transformers ≥ 4.56 and `run_llmmt.py` needs ≤ 4.45 (see Notes), so quantization and generation with the quantized models use a second venv, `venv-quant`, next to `venv`. That also means quantized models are **not** generated with `run_llmmt.py` but with `scripts/generate_quantized.py`, which reproduces its prediction path for our settings: same prompt (`scripts/alma_prompt.py`, copied from `third_party/ALMA/utils/utils.py`), left padding to the full source length, beam 5, bf16, seed 42, 256 new tokens, same translation extraction. Tokenization of all 10 test sets is identical in both venvs (checked).
+
+```bash
+module purge; module load 2024; module load Python/3.12.3-GCCcore-13.3.0
+python -m venv ../venv-quant
+source ../venv-quant/bin/activate
+pip install --upgrade pip
+pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu128
+pip install -r requirements-quant.txt
+```
+
+### Steps
+
+**1. Quantize** (1× H100 per bit width; the array index is the bit width):
+```bash
+sbatch --array=2,3,4,8 scripts/snellius/quantize_gptq.job   # -> <project dir>/models/ALMA-13B-R-gptq-w{2,3,4,8}g128
+```
+Other settings through `QUANT_ARGS`, e.g. per-channel symmetric: `sbatch --array=4 --export=ALL,QUANT_ARGS="--group-size -1 --sym" scripts/snellius/quantize_gptq.job` (-> `ALMA-13B-R-gptq-w4gch-sym`). Each folder has a `quant_meta.json` with all settings.
+
+**2. Evaluate end to end** (one job per model, 1× H100): generation, the 4 COMET metrics, MetricX-24, BLEU/chrF++/hallucination rate and `summarize.py --vs ours-beam`, one after another. Generation takes 10+ hours and scoring ~1.5 h. If the job hits its 20 h limit, submit the same command again: completed directions and metrics are skipped.
+```bash
+for q in gptq-w2g128 gptq-w3g128 gptq-w4g128 gptq-w8g128; do
+  sbatch --export=ALL,QUANT=$q scripts/snellius/eval_quantized.job   # -> outputs/$q/wmt22, outputs/<metric>/$q, outputs/baseline/$q.tsv
+done
+```
+Default is plain beam search, to compare with `ours-beam`. `DECODING=paper` uses the paper's beam sampling, writes to run `$q-paper` and compares with `ours`. The summary tables are at the end of `logs/slurm-gptq-eval-<id>.out`.
+
+The steps can also run separately (the run name is the output folder):
+```bash
+sbatch --export=ALL,QUANT=gptq-w4g128 scripts/snellius/generate_quantized.job
+sbatch --export=ALL,RUN=gptq-w4g128 scripts/snellius/score_comet.job
+sbatch --export=ALL,RUN=gptq-w4g128 scripts/snellius/score_metricx.job
+python scripts/score_lexical.py --run gptq-w4g128
+python scripts/summarize.py --run gptq-w4g128 --vs ours-beam
+```
 
 ## Notes
 

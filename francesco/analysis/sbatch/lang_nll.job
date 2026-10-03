@@ -1,0 +1,26 @@
+#!/bin/bash
+#SBATCH --job-name=lang-nll
+#SBATCH --partition=gpu_h100
+#SBATCH --gpus-per-node=1
+#SBATCH --cpus-per-task=16
+#SBATCH --time=02:00:00
+#SBATCH --output=logs/slurm-%x-%j.out
+
+# Headline question in francesco/docs/05-why-icelandic.md: per-language teacher-forced NLL, plain text
+# (stage-1 skill) vs reference translation (stage-2 skill), fp16 and every GPTQ checkpoint.
+# Forward passes only, no generation. Submit from the repo root:
+#   sbatch francesco/analysis/sbatch/lang_nll.job
+#   sbatch --export=ALL,LIMIT=32 francesco/analysis/sbatch/lang_nll.job    # smoke test
+set -euo pipefail
+VENV=venv-quant      # GPTQModel for the quantized folders; its transformers also loads fp16
+source scripts/snellius/env.sh
+J=$REPO_DIR/francesco/results/json
+LIMIT=${LIMIT:-500}
+
+python francesco/analysis/lang_nll.py --model "$PROJECT_DIR/models/ALMA-13B-R" --tag fp16 \
+  --limit "$LIMIT" --out "$J/lang_nll_fp16.json"
+for b in 8 4 3 2; do
+  python francesco/analysis/lang_nll.py --model "$PROJECT_DIR/models/ALMA-13B-R-gptq-w${b}g128" \
+    --quantized --tag "w$b" --limit "$LIMIT" --out "$J/lang_nll_w$b.json"
+done
+python francesco/analysis/lang_nll.py --compare $J/lang_nll_fp16.json $J/lang_nll_w{8,4,3,2}.json

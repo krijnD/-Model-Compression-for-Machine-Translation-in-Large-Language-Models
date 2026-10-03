@@ -1,0 +1,40 @@
+{
+  "a": "/gpfs/home6/scur0517/outputs/gptq-w3g128/wmt22",
+  "b": "/gpfs/home6/scur0517/outputs/repack-check/w3_torch",
+  "labels": [
+    "grid",
+    "w3_torch"
+  ],
+  "pairs": {
+    "de-en": {
+      "lines": 200,
+      "exact_match_pct": 100.0,
+      "grid": {
+        "bleu": 30.36,
+        "chrf++": 54.04,
+        "halluc_pct": 0.0
+      },
+      "w3_torch": {
+        "bleu": 30.36,
+        "chrf++": 54.04,
+        "halluc_pct": 0.0
+      },
+      "bleu_w3_torch_vs_grid": 100.0
+    },
+    "en-is": {
+      "lines": 200,
+      "exact_match_pct": 100.0,
+      "grid": {
+        "bleu": 11.49,
+        "chrf++": 38.96,
+        "halluc_pct": 8.0
+      },
+      "w3_torch": {
+        "bleu": 11.49,
+        "chrf++": 38.96,
+        "halluc_pct": 8.0
+      },
+      "bleu_w3_torch_vs_grid": 100.0
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "a": "/gpfs/home6/scur0517/outputs/gptq-w3g128/wmt22",
+  "b": "/gpfs/home6/scur0517/outputs/repack-check/w3as4_auto",
+  "labels": [
+    "grid",
+    "w3as4_auto"
+  ],
+  "pairs": {
+    "de-en": {
+      "lines": 200,
+      "exact_match_pct": 80.0,
+      "grid": {
+        "bleu": 30.36,
+        "chrf++": 54.04,
+        "halluc_pct": 0.0
+      },
+      "w3as4_auto": {
+        "bleu": 30.19,
+        "chrf++": 53.99,
+        "halluc_pct": 0.5
+      },
+      "bleu_w3as4_auto_vs_grid": 93.71
+    },
+    "en-is": {
+      "lines": 200,
+      "exact_match_pct": 38.5,
+      "grid": {
+        "bleu": 11.49,
+        "chrf++": 38.96,
+        "halluc_pct": 8.0
+      },
+      "w3as4_auto": {
+        "bleu": 11.07,
+        "chrf++": 38.85,
+        "halluc_pct": 10.0
+      },
+      "bleu_w3as4_auto_vs_grid": 60.69
+    }
+  }
+}

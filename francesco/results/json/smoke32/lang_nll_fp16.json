@@ -1,0 +1,41 @@
+{
+ "tag": "fp16",
+ "model": "/gpfs/home6/scur0517/models/ALMA-13B-R",
+ "limit": 32,
+ "nll": {
+  "mono:is": 1.685155125759487,
+  "mono:en": 2.502962808148762,
+  "trans:is-en": 0.653377454344026,
+  "trans:en-is": 0.5891769692332475,
+  "mono:de": 2.994829279554033,
+  "trans:de-en": 1.1109424673992654,
+  "trans:en-de": 0.5188603861077787,
+  "mono:cs": 2.131189729007825,
+  "trans:cs-en": 0.7419574516475127,
+  "trans:en-cs": 0.6285895095292027,
+  "mono:zh": 1.8072088568060247,
+  "trans:zh-en": 1.1676922745283624,
+  "trans:en-zh": 0.59908825950901,
+  "mono:ru": 2.270475466389301,
+  "trans:ru-en": 0.7385697861062995,
+  "trans:en-ru": 0.693164773052849
+ },
+ "tokens": {
+  "mono:is": 1759,
+  "mono:en": 891,
+  "trans:is-en": 1019,
+  "trans:en-is": 2425,
+  "mono:de": 919,
+  "trans:de-en": 736,
+  "trans:en-de": 1182,
+  "mono:cs": 1246,
+  "trans:cs-en": 811,
+  "trans:en-cs": 1202,
+  "mono:zh": 1665,
+  "trans:zh-en": 974,
+  "trans:en-zh": 1370,
+  "mono:ru": 968,
+  "trans:ru-en": 663,
+  "trans:en-ru": 801
+ }
+}

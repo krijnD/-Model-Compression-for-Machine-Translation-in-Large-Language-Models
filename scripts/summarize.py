@@ -1,7 +1,7 @@
 """Collect all scores of one run and compare them with the ALMA-R paper.
 
-Reads <project dir>/outputs/<metric>/<run>/summary.tsv (written by score_comet.slurm,
-score_metricx.slurm and score_lexical.py); missing metrics are shown as "-".
+Reads <project dir>/outputs/<metric>/<run>/summary.tsv (written by score_comet.job,
+score_metricx.job and score_lexical.py); missing metrics are shown as "-".
 Writes <project dir>/outputs/baseline/<run>.tsv.
 
 Usage (from the repo root): python scripts/summarize.py --run ours --vs paper
@@ -54,8 +54,8 @@ def table(title, cells, metrics):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run", required=True, choices=["paper", "ours", "ours-beam"])
-    parser.add_argument("--vs", choices=["paper", "ours", "ours-beam"], help="another run to compare with")
+    parser.add_argument("--run", required=True, help="paper, ours, ours-beam, or a quantized run, e.g. gptq-w4g128")
+    parser.add_argument("--vs", help="another run to compare with")
     args = parser.parse_args()
 
     ours = load(args.run)

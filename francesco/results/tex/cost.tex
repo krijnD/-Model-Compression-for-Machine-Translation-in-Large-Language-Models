@@ -1,0 +1,92 @@
+\begin{table*}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{llrrrrrrrrrrrr}
+\toprule
+& & \multicolumn{2}{c}{checkpoint} & \multicolumn{5}{c}{de-en, src 256, \texttt{BATCH=4}} & \multicolumn{4}{c}{zh-en, src 512, \texttt{BATCH=1}} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-9}\cmidrule(lr){10-13}
+precision & bits & kernel & GiB on disk & load peak GiB & peak GiB & fixed s & \multicolumn{2}{c}{real lines} & peak GiB & fixed s & \multicolumn{2}{c}{real lines} \\
+\cmidrule(lr){8-9}\cmidrule(lr){12-13}
+& & & & & & & s & $n$ & & & s & $n$ \\
+\midrule
+FP16 & 16 & \texttt{fp16} & 24.24 & 24.3 & 28.8 & 0.359 & 0.436 & 1984 & 26.5 & 0.517 & 1.471 & 256 \\
+W8G128 & 8 & \texttt{TritonV2} & 12.72 & 13.0 & 17.2 & 0.607 & 0.755 & 512 & 15.1 & 0.877 & 2.683 & 256 \\
+W4G128 & 4 & \texttt{ExLLamaV2} & 6.76 & 7.7 & 12.3 & 0.460 & 0.550 & 512 & 10.0 & 0.543 & 1.534 & 256 \\
+W3G128 & 3 & \texttt{Torch} & 5.27 & 5.6 & 10.1 & 1.181 & 1.467 & 64 & 7.8 & 1.377 & 4.570 & 64 \\
+W2G128 & 2 & \texttt{TritonV2} & 3.78 & 4.1 & 11.7 & 4.705 & 3.513 & 64 & 6.4 & 10.138 & 10.577 & 64 \\
+\bottomrule
+\end{tabular}
+\caption{Measured cost per checkpoint, one H100, one process per row (\texttt{francesco/analysis/sbatch/cost.sbatch}, \texttt{measure\_quant\_cost.py}). \emph{load peak} is the allocator peak while the checkpoint was read (for weight-only PTQ the packed tensors are what is loaded, and on disk they are already exactly that size); \emph{peak} is the allocator peak of the timed \texttt{generate()} calls (reserved, i.e.\ fragmentation included, is in the JSON), one warmup excluded. \emph{fixed s} is the median of three calls on the first four sentences of the pair - a byte-identical workload for every row, ~30 generated tokens; \emph{real lines} is the same model over $n$ full lines of the pair at the same batch, which is the number comparable to a grid log. The two protocols are the ones the eval jobs run: de-en 256 at \texttt{BATCH=4} (20 sequences per forward) and zh-en 512 at \texttt{BATCH\_LONG=1} (5). The fp16 row loads through transformers, the packed checkpoints through GPTQModel; prompts, padding, bf16, beam 5 and seed 42 are identical.}
+\label{tab:cost}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lrrrrr}
+\toprule
+direction & FP16 & W8G128 & W4G128 & W3G128 & W2G128 \\
+\midrule
+de$\rightarrow$en & 0.284 & 0.750 & 0.541 & 1.382 & 3.584 \\
+cs$\rightarrow$en & 0.318 & 0.870 & 0.622 & 1.558 & 2.764 \\
+is$\rightarrow$en & 0.303 & 0.876 & 0.630 & 1.914 & 2.766 \\
+zh$\rightarrow$en & 1.471 & 3.069 & 1.757 & 5.901 & 9.770 \\
+ru$\rightarrow$en & 0.309 & 0.812 & 0.583 & 1.512 & 3.330 \\
+en$\rightarrow$de & 0.412 & 1.102 & 0.784 & 1.953 & 3.688 \\
+en$\rightarrow$cs & 0.506 & 1.343 & 0.969 & 2.739 & 3.461 \\
+en$\rightarrow$is & 0.797 & 2.124 & 1.524 & 5.598 & 3.714 \\
+en$\rightarrow$zh & 0.594 & 1.591 & 1.161 & 3.582 & 3.558 \\
+en$\rightarrow$ru & 0.470 & 1.258 & 0.901 & 2.683 & 3.243 \\
+\midrule
+all 10 & 0.546 & 1.369 & 0.937 & 2.801 & 4.066 \\
+\emph{GPU-h charged} & 10.6 & 6.6 & 4.5 & 13.6 & 19.7 \\
+\emph{GPU-s/line} & 2.18 & 1.37 & 0.94 & 2.80 & 4.07 \\
+\emph{vs FP16} & 1.00$	imes$ & 0.63$	imes$ & 0.43$	imes$ & 1.28$	imes$ & 1.86$	imes$ \\
+\bottomrule
+\end{tabular}
+\caption{Seconds per input line for the whole WMT'22 grid, generation only, taken from each job's own log (a pair's wall divided by its lines). Every precision ran the same ten directions, the same beam-5 bf16 settings and the same sentences; only \texttt{zh-en} differs by run (source 512 at \texttt{BATCH\_LONG=1} for the quantized runs, the same setting for fp16 - that pair comes from the cost probe, since the fp16 job's \texttt{zh-en} attempt died out-of-memory). \emph{GPU-h charged} is what the cluster billed for each run's generation: the fp16 baseline is 4$\times$ its wall because that job ran four ranks over four GPUs with the test set sharded across them, every quantized run was one process on one GPU; \emph{GPU-s/line} is that divided by the 17,471 lines, so it is the only row that is comparable across runs, and the per-line column above is a *latency* only for the single-GPU runs. Scoring is excluded.}
+\label{tab:latency}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+precision & disk & peak & grid & quality $\Delta$ vs.\ FP16 & \multicolumn{4}{c}{measured on the grid} \\
+\cmidrule(lr){6-6}\cmidrule(lr){7-9}
+& GiB & GiB & GPU-h & XCOMET-XXL & BLEU & chrF++ & s/line & GPU-s/line \\
+\midrule
+W8G128 & 12.72 & 17.2 & 6.6 & +0.03 & 0.00 & 0.00 & 0.607 (1.69$\times$) & 1.37 \\
+W4G128 & 6.76 & 12.3 & 4.5 & -0.60 & -0.61 & -0.35 & 0.460 (1.28$\times$) & 0.94 \\
+W3G128 & 5.27 & 10.1 & 13.6 & -10.91 & -6.61 & -6.26 & 1.181 (3.29$\times$) & 2.80 \\
+W2G128 & 3.78 & 11.7 & 19.7 & -53.84 & -24.63 & -39.09 & 4.705 (13.11$\times$) & 4.07 \\
+\bottomrule
+\end{tabular}
+\caption{What each checkpoint bought and cost. The $\Delta$ columns are the mean of the two 5-direction averages in \texttt{outputs/baseline/<run>.tsv} against the fp16 beam run, so they are the same numbers as Table~\ref{tab:grid-delta}, collapsed. \emph{peak} is the de-en \texttt{BATCH=4} allocator peak from Table~\ref{tab:cost}; \emph{grid GPU-h} is the sum of the ten directions in that run's own eval log (generation only, single GPU, scoring excluded - the w2 figure is the requeue's, so it excludes the wall it lost); \emph{GPU-s/line} is that divided by the 17,471 scored lines; \emph{s/line} and its ratio are the probe's de-en row, i.e.\ the same fixed-cost structure the full grid pays.}
+\label{tab:benefit}
+\end{table*}
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lrrrrrr}
+\toprule
+precision & \multicolumn{3}{c}{s per line} & \multicolumn{3}{c}{peak GiB} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+& \texttt{B=4} & \texttt{B=16} & gain & \texttt{B=4} & \texttt{B=16} & \texttt{B=16} vs FP16 \\
+\midrule
+FP16 & 0.359 & 0.226 & 1.59$\times$ & 28.8 & 42.3 & 1.00$\times$ \\
+W8G128 & 0.603 & 0.266 & 2.27$\times$ & 17.2 & 30.7 & 1.18$\times$ \\
+W4G128 & 0.461 & 0.281 & 1.64$\times$ & 12.3 & 26.0 & 1.24$\times$ \\
+W3G128 & 1.188 & 0.427 & 2.78$\times$ & 10.1 & 23.3 & 1.89$\times$ \\
+W2G128 & 4.709 & 2.070 & 2.27$\times$ & 11.7 & 35.4 & 9.16$\times$ \\
+\bottomrule
+\end{tabular}
+\caption{The same fixed workload (de-en, source 256, beam 5, the first four sentences) at \texttt{BATCH=4} and \texttt{BATCH=16}, i.e.\ 20 and 80 sequences per forward, with the allocator peak of each. Every checkpoint gains from the batch and the low-bit ones gain most, because their per-forward dequantization is a fixed cost the batch amortizes - but the gain never closes the gap: at \texttt{BATCH=16} the quantized rows are still slower per line than fp16 at the same batch (\emph{B=16 vs FP16}, above 1). What the compression does buy is the room to run that batch at all: w8 at \texttt{BATCH=16} needs 30.7\,GiB and 0.266\,s/line where fp16 at \texttt{BATCH=4} needs 28.8\,GiB and 0.359\,s/line, so spending the memory the quantization freed on a 4$\times$ larger batch is the one configuration where the compression converts into throughput.}
+\label{tab:batch}
+\end{table}

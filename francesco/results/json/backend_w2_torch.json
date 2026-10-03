@@ -1,0 +1,71 @@
+{
+ "tag": "w2",
+ "model": "/gpfs/home6/scur0517/models/ALMA-13B-R-gptq-w2g128",
+ "dtype": "bfloat16",
+ "backend_arg": "torch",
+ "beams": 5,
+ "reps": 3,
+ "max_new_tokens": 256,
+ "nvml_before": [
+  "0, 0 MiB, 95830 MiB"
+ ],
+ "loader": "gptqmodel(torch)",
+ "kernels": [
+  "TorchQuantLinear"
+ ],
+ "quant_linears": 280,
+ "load_s": 4.7,
+ "load_peak_alloc_mib": 4182.8,
+ "load_peak_reserved_mib": 4378.0,
+ "weights_mib": 3870.3,
+ "weights_gib": 3.78,
+ "kv_mib_per_token": 0.7812,
+ "n_params": 328094720,
+ "phases": {
+  "short": {
+   "phase": "short",
+   "pair": "de-en",
+   "batch": 4,
+   "source_length": 256,
+   "input_len": 256,
+   "ok": true,
+   "walls_s": [
+    17.075,
+    17.102,
+    17.08
+   ],
+   "median_s": 17.08,
+   "s_per_line": 4.27,
+   "new_tokens_per_line": 256,
+   "out_tokens_per_s": 59.95,
+   "peak_alloc_mib": 12029.1,
+   "peak_reserved_mib": 15080.0,
+   "kv_mib_in_flight": 7999.5
+  },
+  "long_batch_probe": {
+   "phase": "long_batch_probe",
+   "pair": "zh-en",
+   "batch": 4,
+   "source_length": 512,
+   "input_len": 512,
+   "ok": true,
+   "walls_s": [
+    10.959,
+    10.953,
+    10.955
+   ],
+   "median_s": 10.955,
+   "s_per_line": 2.739,
+   "new_tokens_per_line": 127,
+   "out_tokens_per_s": 46.37,
+   "peak_alloc_mib": 14263.8,
+   "peak_reserved_mib": 17720.0,
+   "kv_mib_in_flight": 11999.2
+  }
+ },
+ "dequant_pass_ms": 19.0,
+ "dequant_error": null,
+ "nvml_after": [
+  "0, 5163 MiB, 95830 MiB"
+ ]
+}

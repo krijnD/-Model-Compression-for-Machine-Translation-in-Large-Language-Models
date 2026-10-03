@@ -17,6 +17,7 @@ jsonlines
 einops
 zstandard
 sentencepiece>=0.2.0,<0.3.0
+fasttext-wheel==0.9.2
 
 # --- BLEU + chrF++ ---
 sacrebleu>=2.4,<3.0

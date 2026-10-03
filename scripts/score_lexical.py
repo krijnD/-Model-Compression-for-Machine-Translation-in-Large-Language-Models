@@ -18,11 +18,13 @@ PAIRS = "de-en,cs-en,is-en,zh-en,ru-en,en-de,en-cs,en-is,en-zh,en-ru".split(",")
 
 
 def hyp_path(run, src, tgt):  # same mapping as hyp_path in scripts/snellius/env.sh
-    return {
+    fixed = {
         "paper": REPO / f"third_party/ALMA/outputs/wmt22_outputs/ALMA-13B-R/{src}{tgt}/test.{src}-{tgt}.{tgt}",
         "ours": OUTPUTS / f"alma-13b-r/wmt22/test-{src}-{tgt}",
         "ours-beam": OUTPUTS / f"alma-13b-r-beam/wmt22/test-{src}-{tgt}",
-    }[run]
+    }
+    # Any other run, e.g. gptq-w4g128, is outputs/<run>/wmt22 (written by generate_quantized.job).
+    return fixed.get(run, OUTPUTS / f"{run}/wmt22/test-{src}-{tgt}")
 
 
 def read(path):
@@ -31,7 +33,7 @@ def read(path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run", required=True, choices=["paper", "ours", "ours-beam"])
+    parser.add_argument("--run", required=True, help="paper, ours, ours-beam, or a folder in outputs/, e.g. gptq-w4g128")
     run = parser.parse_args().run
 
     scores = {"bleu": {}, "chrf": {}, "halluc": {}}

@@ -1,0 +1,88 @@
+#!/bin/bash
+#SBATCH --job-name=eval-distill
+#SBATCH --partition=gpu_h100
+#SBATCH --gpus-per-node=1
+#SBATCH --cpus-per-task=16
+#SBATCH --time=10:00:00
+#SBATCH --output=logs/slurm-%x-%j.out
+
+# Evaluate the distilled adapter (francesco/docs/06-distillation.md) against plain w3, same kernel for both.
+#   1. NLL      lang_nll.py on w3 + adapter (500 sentences)      -> francesco/results/json/lang_nll_w3kd.json
+#                (compared with lang_nll_{fp16,w8,w4,w3,w2}.json from lang_nll.job, if present)
+#   2. generate $PAIRS on the repacked w3 (ExllamaV2), without and with the adapter
+#                -> outputs/gptq-w3g128-as4/wmt22 and outputs/gptq-w3g128-as4-kd/wmt22 (complete files are skipped;
+#                   the first folder is shared with eval_w3as4.job)
+#   3. score    XCOMET-XXL (the paper's main metric) + BLEU/chrF++/hallucination on $PAIRS
+#                -> outputs/xcomet-xxl/<run>/<pair>.txt, francesco/results/json/distill_lexical.json
+# Both generations use the repacked kernel, so the difference is the adapter only. Do not compare with the
+# scored gptq-w3g128 grid directly (different kernel, see docs/04-kernel-repack.md §8).
+#   sbatch francesco/analysis/sbatch/eval_distill.job
+#   ADAPTER=<dir> PAIRS=is-en,en-is,de-en,en-de RUN_KD=gptq-w3g128-as4-kd   (defaults)
+#   Time: generation ~1.5 h per run for the 4 default pairs (measured 200-line rates), scoring ~30 min.
+set -euo pipefail
+cd "$SLURM_SUBMIT_DIR"
+VENV=venv-quant
+source scripts/snellius/env.sh
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+export CUDA_DEVICE_ORDER=PCI_BUS_ID
+
+MODELS_SCRATCH="/scratch-shared/$USER/models"
+ADAPTER="${ADAPTER:-$MODELS_SCRATCH/ALMA-13B-R-gptq-w3g128-kd-lora}"
+W3="$PROJECT_DIR/models/ALMA-13B-R-gptq-w3g128"
+W3AS4="$MODELS_SCRATCH/ALMA-13B-R-gptq-w3g128-as-w4"
+PAIRS="${PAIRS:-is-en,en-is,de-en,en-de}"
+RUN_BASE=gptq-w3g128-as4
+RUN_KD="${RUN_KD:-gptq-w3g128-as4-kd}"
+J="$REPO_DIR/francesco/results/json"
+[ -f "$ADAPTER/adapter.safetensors" ] || { echo "ERROR: no adapter in $ADAPTER (run distill.job first)"; exit 1; }
+
+echo "##### 1/3 NLL w3 + adapter ($(date))"
+python francesco/analysis/lang_nll.py --model "$W3" --quantized --adapter "$ADAPTER" --tag w3kd \
+  --limit 500 --out "$J/lang_nll_w3kd.json"
+ls "$J"/lang_nll_{fp16,w3}.json >/dev/null 2>&1 \
+  && python francesco/analysis/lang_nll.py --compare "$J"/lang_nll_fp16.json "$J"/lang_nll_w3.json "$J"/lang_nll_w3kd.json \
+  || echo "lang_nll_fp16/w3.json missing: run lang_nll.job, then --compare"
+
+todo() {  # $1 = output folder -> pairs of $PAIRS whose file is missing or incomplete
+  local pair out=""
+  for pair in ${PAIRS//,/ }; do
+    local hyp="$1/test-$pair"
+    if [ -f "$hyp" ] && [ "$(awk 'END{print NR}' "$hyp")" -eq "$(awk 'END{print NR}' "$(src_path "$pair")")" ]; then
+      echo "Skipping $pair: $hyp is complete" >&2
+    else out="${out:+$out,}$pair"; fi
+  done
+  echo "$out"
+}
+for run in "$RUN_BASE" "$RUN_KD"; do
+  out="$OUTPUT_ROOT/$run/wmt22"
+  p="$(todo "$out")"
+  [ -z "$p" ] && continue
+  echo "##### 2/3 generate $run: $p ($(date))"
+  adapter_args=(); [ "$run" = "$RUN_KD" ] && adapter_args=(--adapter "$ADAPTER")
+  python francesco/analysis/generate_lora.py --model "$W3AS4" "${adapter_args[@]}" --pairs "$p" --out "$out" \
+    --max-source-length 256 --batch-size 4 --max-new-tokens 256 --num-beams 5
+done
+
+echo "##### 3/3 score ($(date))"
+source "$PROJECT_DIR/venv/bin/activate"   # comet + sacrebleu live in the scoring venv
+for run in "$RUN_BASE" "$RUN_KD"; do
+  R="$OUTPUT_ROOT/xcomet-xxl/$run"; mkdir -p "$R"
+  for pair in ${PAIRS//,/ }; do
+    grep -q "score:" "$R/$pair.txt" 2>/dev/null && continue
+    RUN=$run comet-score -s "$(src_path "$pair")" -t "$OUTPUT_ROOT/$run/wmt22/test-$pair" \
+      --model Unbabel/XCOMET-XXL --batch_size 8 --gpus 1 --to_json "$R/$pair.json" > "$R/$pair.txt"
+  done
+done
+python francesco/analysis/compare_outputs.py --a "$OUTPUT_ROOT/$RUN_BASE/wmt22" --b "$OUTPUT_ROOT/$RUN_KD/wmt22" \
+  --labels w3as4,w3as4-kd --pairs "$PAIRS" --lines 100000 --out "$J/distill_lexical.json"
+
+echo; echo "XCOMET-XXL x100 (ours-beam = fp16; gptq-w3g128 = scored grid, Torch kernel)"
+printf "%-8s" pair; for run in ours-beam gptq-w3g128 "$RUN_BASE" "$RUN_KD"; do printf "%22s" "$run"; done; echo
+for pair in ${PAIRS//,/ }; do
+  printf "%-8s" "$pair"
+  for run in ours-beam gptq-w3g128 "$RUN_BASE" "$RUN_KD"; do
+    printf "%22s" "$(awk '/score:/{s=$NF} END{if (s!="") printf "%.2f", s*100; else print "-"}' \
+      "$OUTPUT_ROOT/xcomet-xxl/$run/$pair.txt" 2>/dev/null || echo -)"
+  done; echo
+done
+echo "##### done ($(date))"

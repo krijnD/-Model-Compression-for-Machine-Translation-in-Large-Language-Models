@@ -1,0 +1,41 @@
+{
+ "tag": "w3",
+ "model": "/gpfs/home6/scur0517/models/ALMA-13B-R-gptq-w3g128",
+ "limit": 32,
+ "nll": {
+  "mono:is": 2.4075503368280096,
+  "mono:en": 2.7993365971729007,
+  "trans:is-en": 1.2604128432344057,
+  "trans:en-is": 1.2187515101481958,
+  "mono:de": 3.353144300126666,
+  "trans:de-en": 1.234132891115935,
+  "trans:en-de": 0.6097662420643969,
+  "mono:cs": 3.0413640054424156,
+  "trans:cs-en": 0.9751692653143303,
+  "trans:en-cs": 0.8573052125445222,
+  "mono:zh": 1.9809744803397147,
+  "trans:zh-en": 1.4242111926695649,
+  "trans:en-zh": 0.7532681764477361,
+  "mono:ru": 2.783108293517562,
+  "trans:ru-en": 1.1425967209299586,
+  "trans:en-ru": 0.8843662962038419
+ },
+ "tokens": {
+  "mono:is": 1759,
+  "mono:en": 891,
+  "trans:is-en": 1019,
+  "trans:en-is": 2425,
+  "mono:de": 919,
+  "trans:de-en": 736,
+  "trans:en-de": 1182,
+  "mono:cs": 1246,
+  "trans:cs-en": 811,
+  "trans:en-cs": 1202,
+  "mono:zh": 1665,
+  "trans:zh-en": 974,
+  "trans:en-zh": 1370,
+  "mono:ru": 968,
+  "trans:ru-en": 663,
+  "trans:en-ru": 801
+ }
+}

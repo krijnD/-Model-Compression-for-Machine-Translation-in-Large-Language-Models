@@ -1,0 +1,66 @@
+#!/bin/bash
+#SBATCH --job-name=gen-lora
+#SBATCH --partition=gpu_h100
+#SBATCH --gpus-per-node=1
+#SBATCH --cpus-per-task=16
+#SBATCH --time=05:00:00
+#SBATCH --output=logs/slurm-%x-%j.out
+
+# Generation only: the repacked w$BITS (4-bit container, ExllamaV2) + a distilled adapter on $PAIRS, into
+# outputs/$KD_RUN/wmt22. Same protocol as scripts/snellius/generate_quantized.job: beam 5, bf16, seed 42,
+# 256 new tokens, source length 256 at batch 4, except zh-en: source length 512 at batch 1.
+# Complete files are skipped, so a job that hits its limit can be resubmitted.
+# Run several of these in parallel only with DISJOINT $PAIRS (no two jobs on the same direction).
+#   BITS=3            : checkpoint models/ALMA-13B-R-gptq-w${BITS}g128, repacked copy in /scratch-shared (default 3)
+#   ADAPTER=<dir>     : distill_lora.py output (default: the w3 rank-16 adapter)
+#   KD_RUN=<name>     : output folder in outputs/ (not RUN: env.sh already sets RUN=ours)
+#   PAIRS=a,b,...     : directions (default: all 10)
+#   NLL=1 TAG=<tag>   : first run lang_nll.py on the original w$BITS + adapter -> results/json/lang_nll_$TAG.json
+# Fits a 40 GB A100 (w2/w3-as4 + adapter peak at ~16 GiB): add --partition=gpu_a100.
+#   PAIRS=zh-en,en-is BITS=2 ADAPTER=... KD_RUN=... sbatch --partition=gpu_a100 --export=ALL francesco/analysis/sbatch/gen_lora.job
+set -euo pipefail
+cd "$SLURM_SUBMIT_DIR"
+VENV=venv-quant
+source scripts/snellius/env.sh
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+export CUDA_DEVICE_ORDER=PCI_BUS_ID
+
+MODELS_SCRATCH="/scratch-shared/$USER/models"
+BITS="${BITS:-3}"
+ADAPTER="${ADAPTER:-$MODELS_SCRATCH/ALMA-13B-R-gptq-w3g128-kd-lora}"
+AS4="$MODELS_SCRATCH/ALMA-13B-R-gptq-w${BITS}g128-as-w4"
+PAIRS="${PAIRS:-$WMT22_PAIRS}"
+PAIRS="${PAIRS//:/,}"   # also accept a:b:c. A comma list inside sbatch --export=... is SPLIT into separate
+                        # variables (only the first pair survives): pass PAIRS via the environment or with ":"
+KD_RUN="${KD_RUN:-gptq-w${BITS}g128-as4-kd}"
+OUT="$OUTPUT_ROOT/$KD_RUN/wmt22"
+[ -f "$ADAPTER/adapter.safetensors" ] || { echo "ERROR: no adapter in $ADAPTER"; exit 1; }
+echo "w$BITS + $ADAPTER -> $OUT | pairs: $PAIRS | $(nvidia-smi --query-gpu=name --format=csv,noheader)"
+
+if [ "${NLL:-0}" = 1 ]; then
+  TAG="${TAG:?set TAG with NLL=1}"
+  J="$REPO_DIR/francesco/results/json"
+  echo "##### NLL w$BITS + adapter -> lang_nll_$TAG.json ($(date))"
+  python francesco/analysis/lang_nll.py --model "$PROJECT_DIR/models/ALMA-13B-R-gptq-w${BITS}g128" --quantized \
+    --adapter "$ADAPTER" --tag "$TAG" --limit 500 --out "$J/lang_nll_$TAG.json"
+  python francesco/analysis/lang_nll.py --compare "$J/lang_nll_fp16.json" "$J/lang_nll_w$BITS.json" "$J/lang_nll_$TAG.json"
+fi
+
+short="" long=""
+for pair in ${PAIRS//,/ }; do
+  hyp="$OUT/test-$pair"
+  if [ -f "$hyp" ] && [ "$(awk 'END{print NR}' "$hyp")" -eq "$(awk 'END{print NR}' "$(src_path "$pair")")" ]; then
+    echo "Skipping $pair: complete"; continue
+  fi
+  if [ "$pair" = zh-en ]; then long=zh-en; else short="${short:+$short,}$pair"; fi
+done
+
+gen() {  # $1 pairs, $2 source length, $3 batch
+  [ -z "$1" ] && return 0
+  echo "##### generate $KD_RUN: $1 (source $2, batch $3) ($(date))"
+  python francesco/analysis/generate_lora.py --model "$AS4" --adapter "$ADAPTER" --pairs "$1" --out "$OUT" \
+    --max-source-length "$2" --batch-size "$3" --max-new-tokens 256 --num-beams 5
+}
+gen "$short" 256 "${BATCH:-4}"
+gen "$long" 512 "${BATCH_LONG:-1}"
+echo "##### done ($(date))"

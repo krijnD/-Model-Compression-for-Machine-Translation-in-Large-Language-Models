@@ -9,3 +9,6 @@ __pycache__/
 # Slurm logs and run outputs
 slurm-*.out
 outputs/
+
+# francesco/: large activation dumps, reproducible with francesco/analysis/measure_channels.py
+francesco/results/json/*.npz

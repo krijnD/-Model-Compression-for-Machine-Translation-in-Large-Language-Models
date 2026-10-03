@@ -1,0 +1,20 @@
+#!/bin/bash
+#SBATCH --job-name=eval-w3as4
+#SBATCH --partition=gpu_h100
+#SBATCH --gpus-per-node=1
+#SBATCH --cpus-per-task=16
+#SBATCH --time=12:00:00
+#SBATCH --output=logs/slurm-%x-%j.out
+
+# Optional. The full grid evaluation (10 directions, all 8 metrics) of the repacked w3 checkpoint
+# (w3 stored as 4-bit, ExllamaV2 kernel; docs/04-kernel-repack.md). Same pipeline as the other GPTQ runs:
+# scripts/snellius/eval_quantized.job with a different model folder, as run "gptq-w3g128-as4".
+# Gives the measured end-to-end speed-up and the full-grid kernel drift vs the scored gptq-w3g128.
+# Generation is expected at ~5-6 h instead of 13.6 h (projected from the 200-line check), scoring ~1.5 h.
+# Directions already written by eval_distill.job are skipped. Resubmit if it hits the limit.
+#   sbatch francesco/analysis/sbatch/eval_w3as4.job
+set -euo pipefail
+cd "$SLURM_SUBMIT_DIR"
+export QUANT=gptq-w3g128-as4
+export MODEL="/scratch-shared/$USER/models/ALMA-13B-R-gptq-w3g128-as-w4"
+exec bash scripts/snellius/eval_quantized.job

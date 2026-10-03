@@ -1,0 +1,9 @@
+{
+ "model": "/gpfs/home6/scur0517/models/ALMA-13B-R-gptq-w2g128",
+ "batch_rows": 80,
+ "in_features": 5120,
+ "out_features": 13824,
+ "dequant_ms": 0.15199347399175167,
+ "matmul_ms": 0.08326990064233541,
+ "ratio": 1.8253111006412845
+}

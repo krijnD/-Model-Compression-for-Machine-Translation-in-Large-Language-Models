@@ -1,0 +1,44 @@
+{
+ "is-en": {
+  "fp16": {
+   "bleu": 40.21,
+   "chrf++": 61.72,
+   "halluc_pct": 0.0,
+   "xcomet_xxl": 81.15
+  },
+  "w2 grid": {
+   "bleu": 0.0,
+   "chrf++": 4.37,
+   "halluc_pct": 42.7,
+   "xcomet_xxl": 12.6
+  },
+  "w2+KD": {
+   "bleu": 35.4,
+   "chrf++": 56.83,
+   "halluc_pct": 0.0,
+   "xcomet_xxl": null
+  },
+  "recovered_bleu": 0.88
+ },
+ "de-en": {
+  "fp16": {
+   "bleu": 31.59,
+   "chrf++": 55.27,
+   "halluc_pct": 0.05,
+   "xcomet_xxl": 94.66
+  },
+  "w2 grid": {
+   "bleu": 0.1,
+   "chrf++": 4.71,
+   "halluc_pct": 62.05,
+   "xcomet_xxl": 14.72
+  },
+  "w2+KD": {
+   "bleu": 29.63,
+   "chrf++": 53.02,
+   "halluc_pct": 0.25,
+   "xcomet_xxl": null
+  },
+  "recovered_bleu": 0.938
+ }
+}

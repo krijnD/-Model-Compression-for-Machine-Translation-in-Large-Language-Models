@@ -1,0 +1,28 @@
+# Separate environment (<project dir>/venv-quant) for GPTQ quantization and generation with the
+# quantized models. GPTQModel needs transformers>=4.56, but ALMA's run_llmmt.py only runs on <=4.45
+# (see requirements.txt), so the two can't share a venv. Scoring still uses the main venv.
+#
+# Install (Python/3.12.3 module, see README):
+#   pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu128
+#   pip install -r requirements-quant.txt
+#
+# GPTQModel is installed from its prebuilt wheel (cu12, torch 2.8, cp312) so nothing is compiled.
+# That wheel lists no dependencies, so its runtime requirements (GPTQModel v4.2.5 requirements.txt)
+# are pinned below.
+gptqmodel @ https://github.com/ModelCloud/GPTQModel/releases/download/v4.2.5/gptqmodel-4.2.5+cu12.torch2.8-cp312-cp312-linux_x86_64.whl
+torch==2.8.0
+transformers==4.56.2
+accelerate==1.10.1
+tokenizers==0.22.2
+safetensors==0.6.2
+huggingface_hub==0.36.2
+sentencepiece==0.2.2
+numpy==2.2.6
+protobuf==6.32.1
+threadpoolctl==3.7.0
+device-smi==0.4.1
+tokenicer==0.0.14
+logbar==0.0.4
+random_word==1.0.13
+pillow==12.3.0
+hf_transfer==0.1.9

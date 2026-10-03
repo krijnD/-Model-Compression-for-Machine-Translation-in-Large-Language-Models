@@ -1,0 +1,42 @@
+{
+ "tag": "w2kd-r64",
+ "model": "/gpfs/home6/scur0517/models/ALMA-13B-R-gptq-w2g128",
+ "adapter": "/scratch-shared/scur0517/models/ALMA-13B-R-gptq-w2g128-kd-lora-r64",
+ "limit": 500,
+ "nll": {
+  "mono:is": 2.9243408351719418,
+  "mono:en": 3.511490292080645,
+  "trans:is-en": 0.9290175758010879,
+  "trans:en-is": 0.912769843292055,
+  "mono:de": 3.670934832568168,
+  "trans:de-en": 1.2377442242688725,
+  "trans:en-de": 0.8999111922157941,
+  "mono:cs": 3.261416685296748,
+  "trans:cs-en": 0.779660964747886,
+  "trans:en-cs": 0.8999607471979835,
+  "mono:zh": 2.602558641897673,
+  "trans:zh-en": 1.478238801053412,
+  "trans:en-zh": 0.8909397722354392,
+  "mono:ru": 3.081933820983893,
+  "trans:ru-en": 0.9123082705959824,
+  "trans:en-ru": 0.8668523472608514
+ },
+ "tokens": {
+  "mono:is": 24645,
+  "mono:en": 13822,
+  "trans:is-en": 13631,
+  "trans:en-is": 33672,
+  "mono:de": 14798,
+  "trans:de-en": 11657,
+  "trans:en-de": 17392,
+  "mono:cs": 21247,
+  "trans:cs-en": 13513,
+  "trans:en-cs": 20270,
+  "mono:zh": 27914,
+  "trans:zh-en": 17103,
+  "trans:en-zh": 20731,
+  "mono:ru": 18426,
+  "trans:ru-en": 12765,
+  "trans:en-ru": 18473
+ }
+}

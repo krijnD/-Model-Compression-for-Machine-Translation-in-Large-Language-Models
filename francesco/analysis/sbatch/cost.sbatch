@@ -1,0 +1,50 @@
+#!/bin/bash
+#SBATCH --job-name=probe-cost
+#SBATCH --partition=gpu_h100
+#SBATCH --gpus-per-node=1
+#SBATCH --cpus-per-task=16
+#SBATCH --time=02:00:00
+#SBATCH --output=logs/slurm-%x-%j.out
+
+# Quantization cost/benefit per checkpoint: peak VRAM, load time, per-line time and throughput
+# at the two eval protocols (de-en 256 @ BATCH=4, zh-en 512 @ BATCH_LONG=1), plus zh-en at
+# BATCH=4 which the fp16 baseline cannot afford (see scripts/snellius/generate_alma_r.job:77).
+# Read-only: does not write to outputs/. Runs on one free H100.
+#   sbatch francesco/analysis/sbatch/cost.sbatch                 # all five checkpoints
+#   TAGS=fp16,w2 sbatch francesco/analysis/sbatch/cost.sbatch    # a subset
+set -euo pipefail
+cd "$SLURM_SUBMIT_DIR"
+# gptqmodel only exists in venv-quant; the fp16 row loads through transformers in the same env,
+# so every row shares one interpreter and the same transformers version.
+VENV=venv-quant
+source scripts/snellius/env.sh
+
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+export CUDA_DEVICE_ORDER=PCI_BUS_ID
+
+TAGS="${TAGS:-fp16,w8,w4,w3,w2}"
+REPS="${REPS:-3}"
+SAMPLES="${SAMPLES:-0}"
+SAMPLES_LONG="${SAMPLES_LONG:-}"
+echo "##### quant-cost probe tags=$TAGS reps=$REPS samples=$SAMPLES/$SAMPLES_LONG ($(date))"
+nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv,noheader
+
+for tag in ${TAGS//,/ }; do
+  case "$tag" in
+    fp16) model="$PROJECT_DIR/models/ALMA-13B-R" ;;
+    *)    model="$PROJECT_DIR/models/ALMA-13B-R-gptq-${tag}g128" ;;
+  esac
+  [ -d "$model" ] || { echo "missing $model"; exit 1; }
+  echo "----- $tag ($model) $(date +%H:%M:%S)"
+  # one tag failing (a kernel without dequantize_weight(), an OOM) must not lose the others
+  extra=(--reps "$REPS" --samples "$SAMPLES")
+  [ -n "$SAMPLES_LONG" ] && extra+=(--samples-long "$SAMPLES_LONG")
+  python francesco/analysis/measure_quant_cost.py \
+    --model "$model" --tag "$tag" "${extra[@]}" \
+    --short-pair de-en --short-batch 4 --short-source-length 256 \
+    --long-pair zh-en --long-batch 1 --long-batch-probe 4 --long-source-length 512 \
+    --max-new-tokens 256 --num-beams 5 --dtype bfloat16 \
+    --out "$REPO_DIR/francesco/results/json/quant_cost_${tag}.json" \
+    || echo "##### tag $tag FAILED (see above)"
+done
+echo "##### done ($(date))"
