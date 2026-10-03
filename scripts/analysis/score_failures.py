@@ -11,24 +11,19 @@
 - empty: no tokens. trunc: 0 < output tokens / reference tokens < 0.5.
 Tokens are sacrebleu's (13a; "zh" for Chinese, which splits CJK characters).
 Usage: python scripts/analysis/score_failures.py [--runs a b c] [--lid /path/lid218e.bin]
-Writes outputs/failures/<run>/summary.tsv, flagged segment ids in outputs/failures/<run>/<pair>.json and
+Writes $OUTPUTS_DIR/failures/<run>/summary.tsv, flagged segment ids in $OUTPUTS_DIR/failures/<run>/<pair>.json and
 results/json/failures.json.
 """
 import argparse
 import json
-import os
 import re
 from collections import Counter
-from pathlib import Path
 
 import fasttext
 from sacrebleu.tokenizers.tokenizer_13a import Tokenizer13a
 from sacrebleu.tokenizers.tokenizer_zh import TokenizerZh
 
-REPO = Path(__file__).resolve().parents[2]
-OUTPUTS = REPO.parent / "outputs"
-TESTSET = REPO / "third_party/ALMA/outputs/wmt22_outputs/wmt-testset"
-J = REPO / "results/json"
+from mtcompress.paths import ARTIFACTS, JSON as J, OUTPUTS, TESTSET
 PAIRS = "de-en,cs-en,is-en,zh-en,ru-en,en-de,en-cs,en-is,en-zh,en-ru".split(",")
 RUNS = ["ours-beam", "gptq-w8g128", "gptq-w4g128", "gptq-w3g128", "gptq-w3g128-as4-kd", "gptq-w2g128",
         "gptq-w2g128-as4-kd-r64", "gptq-w2g128-as4-kd-r64-cont"]
@@ -66,7 +61,8 @@ def read(p):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", nargs="+", default=RUNS)
-    ap.add_argument("--lid", default=f"/scratch-shared/{os.environ['USER']}/models/lid/lid218e.bin")
+    ap.add_argument("--lid", default=str(ARTIFACTS / "lid/lid218e.bin"),
+                    help="NLLB fastText language identifier (huggingface.co/facebook/fasttext-language-identification)")
     a = ap.parse_args()
     lid = fasttext.load_model(a.lid)
 

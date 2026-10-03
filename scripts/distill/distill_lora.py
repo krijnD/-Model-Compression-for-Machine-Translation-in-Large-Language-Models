@@ -1,7 +1,7 @@
-"""Distil fp16 ALMA-13B-R into a LoRA on top of the frozen 3-bit GPTQ checkpoint (see docs/06-distillation.md).
+"""Distil fp16 ALMA-13B-R into a LoRA on top of the frozen 3-bit GPTQ checkpoint (paper Section 2.3, Appendix B).
 
 Teacher: fp16 ALMA-13B-R (bf16 compute). Student: ALMA-13B-R-gptq-w3g128 on TorchQuantLinear, all
-weights frozen, plus a rank-r LoRA on every decoder Linear (lora.py). Loss: token-level forward KL
+weights frozen, plus a rank-r LoRA on every decoder Linear (mtcompress/lora.py). Loss: token-level forward KL
 KL(p_teacher || p_student) over the full vocabulary, on the target tokens only (the prompt is context),
 i.e. the student learns to put its probability mass where fp16 puts it, not to imitate the references.
 --ce-weight adds the usual cross-entropy on the reference tokens (the "SFT on references" variant is
@@ -25,18 +25,14 @@ import argparse
 import json
 import math
 import random
-import sys
 import time
 from pathlib import Path
 
 import torch
 import torch.nn.functional as F
 
-HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(HERE.parents[1] / "scripts"))
-import lora  # noqa: E402
-from alma_prompt import WMT22_PAIRS, get_prompt, load_train_pairs  # noqa: E402
+from mtcompress import lora
+from mtcompress.alma_prompt import WMT22_PAIRS, get_prompt, load_train_pairs
 
 
 def build_data(tok, a):

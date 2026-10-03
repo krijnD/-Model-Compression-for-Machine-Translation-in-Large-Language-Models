@@ -4,7 +4,7 @@ Quantized: every Linear inside the decoder layers (self_attn q/k/v/o_proj, mlp g
 which is GPTQModel's Llama definition. Kept in fp16: embed_tokens, the RMSNorms and lm_head.
 Calibration: ALMA's human-written parallel train data in its fine-tuning format (mtcompress/alma_prompt.py).
 
-Output: <out-root>/<model folder name>-gptq-w<bits>g<group>[-sym]/ (e.g. models/ALMA-13B-R-gptq-w4g128/)
+Output: <out-root>/<model folder name>-gptq-w<bits>g<group>[-sym]/ (e.g. $MODELS_DIR/ALMA-13B-R-gptq-w4g128/)
 with the packed weights, quantize_config.json, the original tokenizer and generation_config files,
 and quant_meta.json (all settings of the run).
 
@@ -21,10 +21,9 @@ import torch
 from gptqmodel import GPTQModel, QuantizeConfig
 from transformers import AutoTokenizer
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from alma_prompt import WMT22_PAIRS, calibration_examples  # noqa: E402
+from mtcompress.alma_prompt import WMT22_PAIRS, calibration_examples
+from mtcompress.paths import MODELS
 
-PROJECT_DIR = Path(__file__).resolve().parents[2]
 # Copied verbatim so tokenization and generation defaults are identical to the fp16 model.
 COPY_FILES = ["tokenizer.model", "tokenizer_config.json", "special_tokens_map.json", "generation_config.json"]
 
@@ -35,8 +34,8 @@ def run_name(bits, group_size, sym):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--model", default=str(PROJECT_DIR / "models/ALMA-13B-R"))
-    p.add_argument("--out-root", default=str(PROJECT_DIR / "models"))
+    p.add_argument("--model", default=str(MODELS / "ALMA-13B-R"))
+    p.add_argument("--out-root", default=str(MODELS))
     p.add_argument("--bits", type=int, nargs="+", default=[4], choices=[2, 3, 4, 8])
     p.add_argument("--group-size", type=int, default=128, help="-1 = one scale per output channel")
     p.add_argument("--sym", action="store_true", help="symmetric (default: asymmetric, with zero-points)")

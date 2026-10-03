@@ -10,7 +10,6 @@ Usage: python scripts/quantize/generate_quantized.py --model $MODELS_DIR/ALMA-13
            --pairs de-en,en-de --out $OUTPUTS_DIR/gptq-w4g128/wmt22 [--decoding beam]
 """
 import argparse
-import sys
 import time
 from pathlib import Path
 
@@ -18,8 +17,7 @@ import torch
 from gptqmodel import BACKEND, GPTQModel
 from transformers import AutoTokenizer, set_seed
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from alma_prompt import clean_outputstring, get_key_suffix, get_prompt, load_test_sources  # noqa: E402
+from mtcompress.alma_prompt import clean_outputstring, get_key_suffix, get_prompt, load_test_sources
 
 
 def main():

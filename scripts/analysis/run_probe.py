@@ -10,14 +10,13 @@ efficiency. Everything in gptqmodel's TritonV2 is quant_matmul():
 This probe measures the same generation at several batch sizes and, independently, the cost of
 the dequant alone, which is what the decision needs.
 
-Run via slurm/probe.sbatch (which activates venv-quant and holds the GPU). Reuses the repo's
-own module loader (alma_prompt.py) so prompts/padding/extraction match make the number comparable
+Run via slurm/probe.job (which activates venv-quant and holds the GPU). Reuses the repo's
+own module loader (mtcompress/alma_prompt.py) so prompts/padding/extraction match make the number comparable
 to the job logs: same prompt, max_length padding, max_source_length, bf16, beam 5, seed 42.
 """
 import argparse
 import json
 import statistics
-import sys
 import time
 from pathlib import Path
 
@@ -26,12 +25,8 @@ from gptqmodel import BACKEND, GPTQModel
 from gptqmodel.nn_modules.qlinear import BaseQuantLinear
 from transformers import AutoTokenizer, set_seed
 
-HERE = Path(__file__).resolve().parent          # francesco/analysis
-FRANCESCO = HERE.parent                         # francesco/
-REPO = FRANCESCO.parent                         # the repository root
-JSON = FRANCESCO / "results" / "json"           # where these scripts write their results
-sys.path.insert(0, str(REPO / "scripts"))
-from alma_prompt import clean_outputstring, get_key_suffix, get_prompt, load_test_sources  # noqa: E402
+from mtcompress.alma_prompt import clean_outputstring, get_key_suffix, get_prompt, load_test_sources
+from mtcompress.paths import JSON, MODELS
 
 MIB = 1024 ** 2
 
@@ -66,7 +61,7 @@ def measure_dequant(model):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--model", default=str(REPO.parent / "models/ALMA-13B-R-gptq-w2g128"))
+    p.add_argument("--model", default=str(MODELS / "ALMA-13B-R-gptq-w2g128"))
     p.add_argument("--pair", default="de-en")
     p.add_argument("--batches", default="4,16", help="comma-separated batch sizes to compare")
     p.add_argument("--reps", type=int, default=3, help="generate() calls timed per batch size")
@@ -94,8 +89,7 @@ def main():
         model = AutoModelForCausalLM.from_pretrained(args.model, torch_dtype=getattr(torch, args.dtype),
                                                      device_map={"": args.device})
     if args.adapter:
-        sys.path.insert(0, str(Path(__file__).resolve().parent))
-        import lora
+        from mtcompress import lora
         cfg = lora.load(model.model, args.adapter)
         print(f"adapter={args.adapter} r={cfg['r']} steps={cfg['steps']}", flush=True)
     model.eval()

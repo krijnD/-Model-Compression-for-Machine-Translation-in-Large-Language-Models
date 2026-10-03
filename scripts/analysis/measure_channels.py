@@ -1,10 +1,10 @@
-"""Per-channel activation-energy profiles per language: the RQ5 measurement in reasearch.md.
+"""Per-channel activation-energy profiles per language: are a language's activations more outlier-heavy?
 
 Why this measures anything. Weight-only GPTQ quantizes W and never x, so a Linear's output error is
 dW @ x -- weight error *weighted by the activation magnitude of each input channel*. GPTQ minimises
 ||Wx - Wx||^2 over its calibration set, and with desc_act=true (all four of our checkpoints) it sorts
 columns by decreasing Hessian diagonal and quantizes the largest first, i.e. it is most careful with
-whatever is loudest *on the 10-direction calibration mixture*. RQ5 asks whether a given language's
+whatever is loudest *on the 10-direction calibration mixture*. The question is whether a given language's
 loud channels are the same channels as the mixture's -- if they are, giving that language more of the
 calibration budget cannot help, and no re-quantize needs to be run to find out.
 
@@ -25,9 +25,9 @@ alma_prompt.calibration_examples and the script refuses to continue if the two d
 The raw per-channel vectors go to an .npz, so all ranking comparisons are offline and re-runnable.
 
 Usage (venv, one GPU), from the repo root:
-  python scripts/analysis/measure_channels.py --out results/json/channels.npz
+  python scripts/analysis/measure_channels.py --out $OUTPUTS_DIR/channels/channels_fp16.npz
   python scripts/analysis/measure_channels.py --out ... --suffix mlp.down_proj,self_attn.o_proj
-  python scripts/analysis/measure_channels.py --compare results/json/channels.npz
+  python scripts/analysis/measure_channels.py --compare $OUTPUTS_DIR/channels/channels_fp16.npz
 """
 import argparse
 import json
@@ -40,11 +40,8 @@ import numpy as np
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-HERE = Path(__file__).resolve().parent        # francesco/analysis
-REPO = HERE.parents[1]                        # the repository root
-PROJECT_DIR = REPO.parent                     # holds models/, venv/, hf_cache/, outputs/
-sys.path.insert(0, str(REPO / "scripts"))     # alma_prompt.py lives with the other quant scripts
-from alma_prompt import WMT22_PAIRS, get_prompt, load_train_pairs  # noqa: E402
+from mtcompress.alma_prompt import WMT22_PAIRS, get_prompt, load_train_pairs
+from mtcompress.paths import MODELS, OUTPUTS
 
 KS = (1, 8, 32)
 
@@ -262,7 +259,7 @@ def compare(path, k=32):
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--compare", type=Path, help="read an existing .npz and print the comparison, then exit")
-    p.add_argument("--model", default=str(PROJECT_DIR / "models/ALMA-13B-R"), help="fp16 ALMA-13B-R")
+    p.add_argument("--model", default=str(MODELS / "ALMA-13B-R"), help="fp16 ALMA-13B-R")
     p.add_argument("--tokenizer", default=None, help="defaults to --model (quantized folders ship their own)")
     p.add_argument("--suffix", default="mlp.down_proj", help="comma-separated module name suffixes")
     p.add_argument("--profiles", default="mixture,calib:is,calib:de,calib:cs,calib:zh,calib:ru,pool:is:1024,pool:de:1024")
@@ -274,7 +271,7 @@ def main():
     p.add_argument("--device", default="cuda:0")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--limit", type=int, help="truncate every profile to N examples (smoke tests)")
-    p.add_argument("--out", type=Path, default=Path("channels.npz"))
+    p.add_argument("--out", type=Path, default=OUTPUTS / "channels/channels_fp16.npz")
     args = p.parse_args()
 
     if args.compare:
@@ -290,7 +287,7 @@ def main():
 
     if mix is not None:
         # same set as the shipped checkpoints' calibration (alma_prompt shuffles, which is a no-op here)
-        from alma_prompt import calibration_examples
+        from mtcompress.alma_prompt import calibration_examples
         ref = sorted(tuple(e["input_ids"]) for e in
                      calibration_examples(tokenizer, 1024, WMT22_PAIRS, seed=args.seed,
                                           max_length=args.max_length))
@@ -334,6 +331,7 @@ def main():
                                       "layers": names, "ks": list(KS), "profiles": list(profiles),
                                       "per_profile": meta_profiles, "max_length": args.max_length,
                                       "seed": args.seed, "limit": args.limit}))
+    args.out.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(args.out, **z)
     print(f"wrote {args.out}")
     compare(args.out)

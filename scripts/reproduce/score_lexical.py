@@ -7,14 +7,11 @@ Hallucination: candidate at least 2x as long as the reference, in characters.
 Usage (from the repo root, venv active): python scripts/reproduce/score_lexical.py --run ours
 """
 import argparse
-from pathlib import Path
 
 from sacrebleu.metrics import BLEU, CHRF
 
-REPO = Path(__file__).resolve().parents[1]
-OUTPUTS = REPO.parent / "outputs"
-TESTSET = REPO / "third_party/ALMA/outputs/wmt22_outputs/wmt-testset"
-PAIRS = "de-en,cs-en,is-en,zh-en,ru-en,en-de,en-cs,en-is,en-zh,en-ru".split(",")
+from mtcompress.alma_prompt import WMT22_PAIRS as PAIRS
+from mtcompress.paths import OUTPUTS, REPO, TESTSET
 
 
 def hyp_path(run, src, tgt):  # same mapping as hyp_path in slurm/env.sh
@@ -23,7 +20,7 @@ def hyp_path(run, src, tgt):  # same mapping as hyp_path in slurm/env.sh
         "ours": OUTPUTS / f"alma-13b-r/wmt22/test-{src}-{tgt}",
         "ours-beam": OUTPUTS / f"alma-13b-r-beam/wmt22/test-{src}-{tgt}",
     }
-    # Any other run, e.g. gptq-w4g128, is outputs/<run>/wmt22 (written by generate_quantized.job).
+    # Any other run, e.g. gptq-w4g128, is $OUTPUTS_DIR/<run>/wmt22 (written by generate_quantized.job).
     return fixed.get(run, OUTPUTS / f"{run}/wmt22/test-{src}-{tgt}")
 
 

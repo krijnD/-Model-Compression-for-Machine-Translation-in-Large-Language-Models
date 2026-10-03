@@ -1,8 +1,8 @@
-"""scripts/quantize/generate_quantized.py with an optional LoRA adapter from distill_lora.py (see docs/06-distillation.md).
+"""scripts/quantize/generate_quantized.py with an optional LoRA adapter from distill_lora.py.
 
 The prediction path is a copy of generate_quantized.py's (same prompt, left padding to exactly
 --max-source-length, beam 5, bf16, seed 42, 256 new tokens, clean_outputstring), so outputs with and
-without --adapter differ only by the adapter. Kept as a copy, not an edit, so scripts/ is unchanged.
+without --adapter differ only by the adapter. Kept separate so the grid's generation code stays as it was run.
 The adapter wraps whatever kernel GPTQModel picks: on the repacked w3 (…-gptq-w3g128-as-w4) that is
 ExllamaV2QuantLinear, which dequantizes to the same weights the adapter was trained on (TorchQuantLinear).
 
@@ -10,7 +10,6 @@ ExllamaV2QuantLinear, which dequantizes to the same weights the adapter was trai
       --adapter $ARTIFACTS_DIR/w3-kd-lora --pairs is-en,en-is --out $OUTPUTS_DIR/gptq-w3g128-as4-kd/wmt22
 """
 import argparse
-import sys
 import time
 from pathlib import Path
 
@@ -18,11 +17,8 @@ import torch
 from gptqmodel import BACKEND, GPTQModel
 from transformers import AutoTokenizer, set_seed
 
-HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(HERE.parents[1] / "scripts"))
-import lora  # noqa: E402
-from alma_prompt import clean_outputstring, get_key_suffix, get_prompt, load_test_sources  # noqa: E402
+from mtcompress import lora
+from mtcompress.alma_prompt import clean_outputstring, get_key_suffix, get_prompt, load_test_sources
 
 
 def main():

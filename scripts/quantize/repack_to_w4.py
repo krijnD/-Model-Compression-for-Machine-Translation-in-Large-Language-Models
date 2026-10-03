@@ -2,7 +2,7 @@
 
 Why: GPTQModel 4.2.5 has no fused kernel for 3 or 2 bits, so w3 runs TorchQuantLinear and w2 runs
 TritonV2QuantLinear, both of which dequantize the whole matrix to bf16 on every forward and then
-matmul (francesco/README.md, "Measurement 5"). The only fused kernel that accepts our asymmetric,
+matmul. The only fused kernel that accepts our asymmetric,
 act-ordered (desc_act=True) checkpoints is ExllamaV2QuantLinear, and it is 4-bit only.
 
 A b-bit asymmetric GPTQ weight is w = s * (q - z) with q, z in [0, 2^b - 1]. For b < 4 that value
@@ -44,8 +44,7 @@ import torch
 from safetensors import safe_open
 from safetensors.torch import save_file
 
-HERE = Path(__file__).resolve().parent
-JSON_DIR = HERE.parent / "results" / "json"
+from mtcompress.paths import JSON as JSON_DIR
 
 # The packed constant GPTQModel adds to v1 qzeros at load (convert_gptq_v1_to_v2_format_module,
 # int32 pack dtype). 3 bits cycles through three constants by column position mod 3.

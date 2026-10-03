@@ -1,6 +1,6 @@
 """Is `is` fragile, or are *hard sentences* fragile and `is` just has more of them?  CPU only.
 
-Uses the per-sentence scores the grid already wrote (<root>/outputs/<metric>/<run>/<pair>.json):
+Uses the per-sentence scores the grid already wrote ($OUTPUTS_DIR/<metric>/<run>/<pair>.json):
 damage = XCOMET-XXL(w3) - XCOMET-XXL(fp16 beam), per sentence; "difficulty" = the fp16 output's
 reference-free KIWI-XXL score (a different metric than the damage one, so a shared metric error
 does not create the correlation by itself). w8 is the null run (no quality change), so the same
@@ -15,11 +15,13 @@ from pathlib import Path
 import numpy as np
 from scipy.stats import spearmanr
 
+from mtcompress.paths import JSON, OUTPUTS
+
 PAIRS = ["de-en", "cs-en", "is-en", "zh-en", "ru-en", "en-de", "en-cs", "en-is", "en-zh", "en-ru"]
 
 
 def load(root, metric, run, pair):
-    x = json.load(open(root / "outputs" / metric / run / f"{pair}.json"))
+    x = json.load(open(root / metric / run / f"{pair}.json"))
     if isinstance(x, dict):
         x = next(iter(x.values()))
     return np.array([r["COMET"] for r in x], dtype=float)
@@ -27,10 +29,10 @@ def load(root, metric, run, pair):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--root", default=str(Path(__file__).resolve().parents[3]))
+    ap.add_argument("--root", default=str(OUTPUTS), help="the outputs folder")
     ap.add_argument("--bits", type=int, default=3)
     ap.add_argument("--bins", type=int, default=5)
-    ap.add_argument("--out", default=str(Path(__file__).resolve().parents[1] / "results/json/fragility_by_confidence.json"))
+    ap.add_argument("--out", default=str(JSON / "fragility_by_confidence.json"))
     a = ap.parse_args()
     root = Path(a.root)
     run = f"gptq-w{a.bits}g128"

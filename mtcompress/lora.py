@@ -3,7 +3,7 @@
 Why not peft: peft decides per kernel class whether it can wrap a quantized layer, and we need the same
 adapter on two kernels. Training runs on TorchQuantLinear (the only GPTQ kernel here with a backward
 pass; ExllamaV2QuantLinear has SUPPORTS_TRAINING = False), and generation runs on the repacked w3 on
-ExllamaV2QuantLinear (docs/04-kernel-repack.md, 2.5x faster). Both dequantize to the same weights, so a
+ExllamaV2QuantLinear (scripts/quantize/repack_to_w4.py, 2.5x faster). Both dequantize to the same weights, so a
 wrapper that only calls base(x) and adds the low-rank term works on either.
 
     y = base(x) + (alpha / r) * x A^T B^T      A: r x in (Kaiming), B: out x r (zeros) -> starts as a no-op

@@ -18,8 +18,8 @@ Dequantization is GPTQModel's own TorchQuantLinear.dequantize_weight() after its
 conversion (checkpoint_format "gptq" = v1), i.e. exactly what the eval runs computed.
 
 Usage (CPU, login node is fine; ~2-3 GB RAM per module):
-  venv-quant/bin/python scripts/analysis/measure_delta.py \
-      --pretrain-dir /scratch-shared/scur0517/alma_delta --layers 0 20 39 \
+  python scripts/analysis/measure_delta.py \
+      --pretrain-dir <download dir> --layers 0 20 39 \
       --out results/json/delta_erasure.json
 The pretrain shards are haoranxu/ALMA-13B-Pretrain pytorch_model-0000{1,3,6}-of-00006.bin
 (layers 0-7, 15-22, 38-39); adapter_model.bin from haoranxu/ALMA-13B-Pretrain-LoRA.
@@ -31,6 +31,8 @@ from pathlib import Path
 
 import torch
 from safetensors import safe_open
+
+from mtcompress.paths import MODELS, OUTPUTS
 
 torch.set_grad_enabled(False)
 torch.set_num_threads(int(os.environ.get("THREADS", "4")))  # login-node friendly
@@ -89,14 +91,13 @@ def dequant(ckpt, prefix, bits, out_f, in_f):
 
 def main():
     ap = argparse.ArgumentParser()
-    root = Path(__file__).resolve().parents[3]
-    ap.add_argument("--models", default=str(root / "models"))
+    ap.add_argument("--models", default=str(MODELS))
     ap.add_argument("--pretrain-dir", required=True)
     ap.add_argument("--layers", type=int, nargs="+", default=[0, 20, 39])
     ap.add_argument("--modules", nargs="+", default=MODULES)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--channels", default=str(Path(__file__).resolve().parents[1] / "results/json/channels_fp16.npz"),
-                    help="RQ5 per-channel input energy per language (down_proj only); '' to skip")
+    ap.add_argument("--channels", default=str(OUTPUTS / "channels/channels_fp16.npz"),
+                    help="measure_channels.py per-channel input energy per language (down_proj only); '' to skip")
     ap.add_argument("--profiles", nargs="+",
                     default=["mixture", "calib:is", "calib:de", "calib:cs", "calib:zh", "calib:ru"])
     args = ap.parse_args()

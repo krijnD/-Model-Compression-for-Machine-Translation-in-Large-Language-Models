@@ -1,16 +1,15 @@
 """Collect all scores of one run and compare them with the ALMA-R paper.
 
-Reads <project dir>/outputs/<metric>/<run>/summary.tsv (written by score_comet.job,
+Reads $OUTPUTS_DIR/<metric>/<run>/summary.tsv (written by score_comet.job,
 score_metricx.job and score_lexical.py); missing metrics are shown as "-".
-Writes <project dir>/outputs/baseline/<run>.tsv.
+Writes results/scores/<run>.tsv, the table every paper figure and table reads.
 
 Usage (from the repo root): python scripts/reproduce/summarize.py --run ours --vs paper
 """
 import argparse
-from pathlib import Path
 
-OUTPUTS = Path(__file__).resolve().parents[2] / "outputs"
-PAIRS = "de-en,cs-en,is-en,zh-en,ru-en,en-de,en-cs,en-is,en-zh,en-ru".split(",")
+from mtcompress.alma_prompt import WMT22_PAIRS as PAIRS
+from mtcompress.paths import OUTPUTS, SCORES
 ROWS = PAIRS + ["avg_en-xx", "avg_xx-en"]
 METRICS = ["bleu", "chrf", "comet-22", "kiwi-22", "kiwi-xxl", "xcomet-xxl", "metricx-24", "halluc"]
 
@@ -71,7 +70,7 @@ def main():
         table(f"{args.run} minus {args.vs}",
               lambda r, m: fmt(diff(ours.get((r, m)), other.get((r, m))), "+"), METRICS)
 
-    out = OUTPUTS / "baseline" / f"{args.run}.tsv"
+    out = SCORES / f"{args.run}.tsv"
     out.parent.mkdir(parents=True, exist_ok=True)
     header = ["pair", "metric", args.run, "paper_reported"] + ([args.vs] if args.vs else [])
     lines = ["\t".join(header)]

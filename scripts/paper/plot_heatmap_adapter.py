@@ -4,7 +4,7 @@ Columns: FP16 (absolute score, grey: the reference), then the change vs FP16 for
 Rows: the four directions the adapter was generated for (is-en, en-is, de-en, en-de).
 Metrics: BLEU, chrF++ (sacrebleu on outputs/*/wmt22) and XCOMET-XXL (outputs/xcomet-xxl/<run>/<pair>.txt).
 MetricX-24 (in fig2) was not run for the adapter outputs, so chrF++ takes its place.
-W3 is the repacked run on the same ExllamaV2 kernel as the adapter run (docs/04-kernel-repack.md §8), so the two
+W3 is the repacked run on the same ExllamaV2 kernel as the adapter run (scripts/quantize/repack_to_w4.py), so the two
 W3 columns differ only by the adapter. Colour scale: RdYlGn_r, symmetric per metric, red = worse.
 
 The cell values are cached in results/json/adapter_heatmap.json, so the figure builds from the repository alone:

@@ -28,18 +28,13 @@ import argparse
 import json
 import statistics
 import subprocess
-import sys
 import time
 from pathlib import Path
 
 import torch
 
-HERE = Path(__file__).resolve().parent          # francesco/analysis
-FRANCESCO = HERE.parent                         # francesco/
-REPO = FRANCESCO.parent                         # the repository root
-JSON_DIR = FRANCESCO / "results" / "json"
-sys.path.insert(0, str(REPO / "scripts"))
-from alma_prompt import get_key_suffix, get_prompt, load_test_sources  # noqa: E402
+from mtcompress.alma_prompt import get_key_suffix, get_prompt, load_test_sources
+from mtcompress.paths import JSON as JSON_DIR
 
 MIB = 1024 ** 2
 
@@ -77,7 +72,7 @@ def load_model(model_dir, dtype, backend="auto"):
 
 def dequant_pass_ms(model):
     """One full dequantization pass over every quantized weight: the cost a forward pass pays
-    once regardless of batch (francesco/README.md, "Reconciling three dequant numbers"). Not every
+    once regardless of batch. Not every
     kernel exposes it (ExLlamaV2 does not), so a missing method is recorded as None, not an error."""
     from gptqmodel.nn_modules.qlinear import BaseQuantLinear
     mods = [m for m in model.model.modules() if isinstance(m, BaseQuantLinear)]

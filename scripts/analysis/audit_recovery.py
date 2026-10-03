@@ -14,11 +14,7 @@ from pathlib import Path
 import numpy as np
 import sacrebleu
 
-REPO = Path(__file__).resolve().parents[2]
-OUT = REPO.parent / "outputs"
-TESTSET = REPO / "third_party/ALMA/outputs/wmt22_outputs/wmt-testset"
-ALMA_DATA = REPO / "third_party/ALMA/human_written_data"
-J = REPO / "results/json"
+from mtcompress.paths import ALMA_DATA, JSON as J, OUTPUTS as OUT, TESTSET
 PAIRS = ["is-en", "en-is", "de-en", "en-de", "cs-en", "en-cs", "ru-en", "en-ru", "zh-en", "en-zh"]
 
 # Tiny stopword LID over the six languages; scripts first for ru / zh.
@@ -92,7 +88,7 @@ def xcomet(run, pair):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--kd", default="gptq-w2g128-as4-kd-r64-cont")
-    ap.add_argument("--dump", default=str(REPO / "results/audit"))
+    ap.add_argument("--dump", default=str(OUT / "audit"), help="per-direction worst-segment TSVs (contain translations)")
     a = ap.parse_args()
     systems = {"fp16": ("alma-13b-r-beam", "ours-beam"), "w4": ("gptq-w4g128", "gptq-w4g128"),
                "w3": ("gptq-w3g128", "gptq-w3g128"), "w2+KD": (a.kd, a.kd)}

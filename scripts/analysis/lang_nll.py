@@ -11,16 +11,12 @@ and only `trans` diverges.
   python scripts/analysis/lang_nll.py --model $MODELS_DIR/ALMA-13B-R [--quantized] \
       --tag fp16 --out results/json/lang_nll_fp16.json [--limit 500]
   python scripts/analysis/lang_nll.py --compare results/json/lang_nll_*.json
-  --adapter <dir>: add a distill_lora.py adapter on top of --model (the w3 + KD run, docs/06-distillation.md)
+  --adapter <dir>: add a distill_lora.py adapter on top of --model (the w3 + KD and w2 + KD runs)
 """
 import argparse
 import json
-import sys
-from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO / "scripts"))
-from alma_prompt import get_prompt, pair_dir  # noqa: E402
+from mtcompress.alma_prompt import get_prompt, pair_dir
 
 LANGS = ["is", "de", "cs", "zh", "ru"]
 
@@ -100,8 +96,7 @@ def main():
         from transformers import AutoModelForCausalLM
         model = AutoModelForCausalLM.from_pretrained(a.model, torch_dtype=torch.bfloat16).to(a.device)
     if a.adapter:
-        sys.path.insert(0, str(Path(__file__).resolve().parent))
-        import lora
+        from mtcompress import lora
         lora.load(model, a.adapter)
     model.eval()
     res = {"tag": a.tag, "model": a.model, "adapter": a.adapter, "limit": a.limit, "nll": {}, "tokens": {}}

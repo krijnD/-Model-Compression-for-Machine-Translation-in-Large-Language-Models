@@ -18,8 +18,7 @@ from pathlib import Path
 
 from sacrebleu.metrics import BLEU, CHRF
 
-REPO = Path(__file__).resolve().parents[2]
-TESTSET = REPO / "third_party/ALMA/outputs/wmt22_outputs/wmt-testset"
+from mtcompress.paths import TESTSET
 
 
 def read(path):

@@ -1,27 +1,23 @@
-"""Paired bootstrap confidence intervals (Koehn 2004) for the distillation results (docs/06-distillation.md §9-11).
+"""Paired bootstrap confidence intervals (Koehn 2004) for the distillation results (paper Section 3.3).
 
 For each direction: resample the test sentences with replacement B times, using the SAME indices for every system
 (paired), and recompute each score on every resample. The 2.5/97.5 percentiles give the 95 % CI.
   BLEU      from summed per-sentence n-gram statistics (sacrebleu's own corpus BLEU from the resampled counts,
             not a mean of sentence BLEU)
-  XCOMET    mean of the per-segment scores in outputs/xcomet-xxl/<run>/<pair>.json (x100)
+  XCOMET    mean of the per-segment scores in $OUTPUTS_DIR/xcomet-xxl/<run>/<pair>.json (x100)
 Derived quantities, also computed inside every resample:
   recovered = (kd - base) / (fp16 - base)     base = plain quantized model on the same kernel (w3) / plain w2
   kd - w4, kd - plain w3                       with P(diff <= 0) = share of resamples where the gain vanishes
-CPU only (login node is fine): ../venv/bin/python scripts/analysis/bootstrap_ci.py [--B 1000]
+CPU only (login node is fine): python scripts/analysis/bootstrap_ci.py [--B 1000]
 Output: results/json/bootstrap_ci.json and a printed table.
 """
 import argparse
 import json
-from pathlib import Path
 
 import numpy as np
 from sacrebleu.metrics import BLEU
 
-REPO = Path(__file__).resolve().parents[2]
-OUT = REPO.parent / "outputs"
-TESTSET = REPO / "third_party/ALMA/outputs/wmt22_outputs/wmt-testset"
-J = REPO / "results/json"
+from mtcompress.paths import JSON as J, OUTPUTS as OUT, TESTSET
 
 # system name -> (generation folder, xcomet folder)
 SYS = {"fp16": ("alma-13b-r-beam", "ours-beam"), "w4": ("gptq-w4g128", "gptq-w4g128"),
