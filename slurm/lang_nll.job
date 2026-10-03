@@ -6,7 +6,7 @@
 #SBATCH --time=02:00:00
 #SBATCH --output=logs/slurm-%x-%j.out
 
-# Teacher-forced NLL per language (paper Section 3.2, Figure 5): monolingual text vs reference translation,
+# Teacher-forced NLL per language (paper Section 3.2 and Figure 3): monolingual text vs reference translation,
 # for fp16 and every GPTQ checkpoint. For the adapters, use gen_lora.job with NLL=1.
 # Forward passes only, no generation. Submit from the repo root:
 #   sbatch slurm/lang_nll.job

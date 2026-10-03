@@ -2,7 +2,7 @@
 
   Disk          weights_gib from results/json/quant_cost_<tag>.json (+ the adapter in bf16 for the KD rows)
   Peak b=1, b=4 peak_alloc of the fixed de-en workload (beam 5, source 256), results/json/probe16_<tag>[_b1].json;
-                the KD rows were measured with the adapter in fp32 and are reported in bf16 (paper footnote 1)
+                the KD rows were measured with the adapter in fp32 and are reported in bf16 (footnote in paper Section 3.3)
   Time          s per sentence at b=4 on one H100 (the KD rows: probe16_<tag>_h100.json; the other adapter
                 probes ran on an A100, whose times are not comparable)
   Quality       mean over the ten directions of results/scores/<run>.tsv

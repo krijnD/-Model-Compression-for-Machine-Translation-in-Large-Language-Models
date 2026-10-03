@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this code or these results, please cite the paper."
+title: "Low-Bit Quantization for Multilingual Machine Translation"
+type: software
+authors:
+  - family-names: Dignum
+    given-names: Krijn
+    affiliation: University of Amsterdam
+  - family-names: Massafra
+    given-names: Francesco
+    affiliation: University of Amsterdam
+  - family-names: Vork
+    given-names: Matthijs
+    affiliation: University of Amsterdam
+  - family-names: Wilde
+    given-names: Max
+    affiliation: University of Amsterdam
+  - family-names: Wolting
+    given-names: Reinout
+    affiliation: University of Amsterdam
+date-released: 2026-10-03

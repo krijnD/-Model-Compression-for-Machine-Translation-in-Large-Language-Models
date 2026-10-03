@@ -62,7 +62,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", nargs="+", default=RUNS)
     ap.add_argument("--lid", default=str(ARTIFACTS / "lid/lid218e.bin"),
-                    help="NLLB fastText language identifier (huggingface.co/facebook/fasttext-language-identification)")
+                    help="NLLB fastText language identifier, https://dl.fbaipublicfiles.com/nllb/lid/lid218e.bin")
     a = ap.parse_args()
     lid = fasttext.load_model(a.lid)
 

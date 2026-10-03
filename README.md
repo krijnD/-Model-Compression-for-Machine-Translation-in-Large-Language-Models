@@ -1,232 +1,247 @@
-# Model Compression for Machine Translation in Large Language Models
+# Low-Bit Quantization for Multilingual Machine Translation
 
-Everything runs on Snellius. ALMA-R generation and all evaluation metrics share **one** virtual environment.
+Code, results and paper source for *Low-Bit Quantization for Multilingual Machine Translation*
+(Krijn Dignum, Francesco Massafra, Matthijs Vork, Max Wilde, Reinout Wolting; University of Amsterdam).
 
-External code is included as git submodules in `third_party/`:
-- `third_party/ALMA`: the [ALMA / ALMA-R repo](https://github.com/fe1ixxu/ALMA), which provides the generation script, the WMT'22 test sets and the paper's own outputs
-- `third_party/metricx`: [MetricX](https://github.com/google-research/metricx)
+We quantize [ALMA-13B-R](https://huggingface.co/haoranxu/ALMA-13B-R) with GPTQ to 8, 4, 3 and 2 bits and evaluate it
+on the ten WMT'22 directions of the ALMA-R paper (WMT'21 for Icelandic) with seven metrics. Keeping the quantizer
+fixed, we then distil the full-precision model into a small LoRA adapter on the 3-bit and 2-bit models.
 
-## Installation on Snellius
+| Model | Disk (GiB) | Peak GPU, batch 1 (GiB) | BLEU | XCOMET-XXL | MetricX-24 ↓ |
+|---|---:|---:|---:|---:|---:|
+| fp16 | 24.2 | 25.4 | 31.4 | 92.1 | 2.38 |
+| w4 | 6.8 | 8.9 | 30.5 | 91.3 | 2.48 |
+| w3 | 5.3 | 6.8 | 23.3 | 78.4 | 4.72 |
+| w2 | 3.8 | 5.0 | 0.0 | 22.7 | 9.91 |
+| **w3 + distilled adapter** (r = 16) | 5.4 | 6.9 | 31.1 | 91.9 | 2.43 |
+| **w2 + distilled adapter** (r = 64) | 4.2 | 5.5 | 27.8 | 88.1 | 3.16 |
 
-| Metric | Comes from | Install |
+Averages over the ten directions; adapters counted in bf16. Full results: paper Table 1 and Appendix A.
+
+- Down to 4 bits, quantization is nearly free. Below that, quality collapses unevenly: Icelandic first.
+- The 3-bit model keeps its knowledge of Icelandic but loses the Icelandic–English mapping (teacher-forced NLL).
+- A distilled adapter restores the 3-bit model to full-precision quality, and turns the collapsed 2-bit model into
+  a usable translator that fits an 8 GB GPU.
+
+## Repository layout
+
+```
+mtcompress/        shared code: paths.py (all folders), alma_prompt.py (ALMA's prompt), lora.py (the adapter)
+scripts/
+  reproduce/       score_lexical.py (BLEU, chrF++), summarize.py (one score table per run)
+  quantize/        quantize_gptq.py, generate_quantized.py, repack_to_w4.py (lossless 3/2-bit -> 4-bit layout)
+  distill/         distill_lora.py (KL distillation into a LoRA), generate_lora.py
+  analysis/        NLL, memory/latency probes, failure modes, bootstrap CIs, sanity checks, weight analyses
+  paper/           every figure and table of the paper, built from results/
+slurm/             one job per step (Snellius, H100), env.sh sets all paths
+results/
+  scores/          corpus-level scores of every model on every metric and direction
+  json/            NLL, probes, kernels, failure rates, bootstrap CIs, audits, weight analyses
+  distill_runs/    adapter configs and training logs of the three distillation runs
+paper/             LaTeX source, figures and generated tables
+third_party/       ALMA (prompts, data, test sets, generation) and MetricX, as git submodules
+```
+
+Translations, segment-level scores and model weights are not in the repository.
+
+## Rebuild the paper's figures and tables (CPU, seconds)
+
+```bash
+git clone --recurse-submodules <this repository>
+cd <repository>
+pip install -r requirements.txt   # or only: pip install matplotlib==3.9.4 numpy==1.26.4 scipy==1.13.1
+make paper                        # figures, appendix table, and a cell-by-cell check of Tables 1 and 2
+git diff --exit-code              # the rebuilt files are byte-identical to the committed ones
+```
+
+| Paper | Built by | From |
 |---|---|---|
-| BLEU (SacreBLEU) | [`sacrebleu`](https://github.com/mjpost/sacrebleu) | pip |
-| chrF++ | [`sacrebleu`](https://github.com/mjpost/sacrebleu) (`CHRF(word_order=2)`) | pip |
-| XCOMET-XXL | [`unbabel-comet`](https://github.com/Unbabel/COMET), model [`Unbabel/XCOMET-XXL`](https://huggingface.co/Unbabel/XCOMET-XXL), as used in the ALMA-R paper | pip, plus the Hugging Face license |
-| MetricX-24 Hybrid | [`google-research/metricx`](https://github.com/google-research/metricx), model [`google/metricx-24-hybrid-xl-v2p6`](https://huggingface.co/google/metricx-24-hybrid-xl-v2p6) | git submodule `third_party/metricx` (not on PyPI) plus pip deps |
-| Hallucination rate | own code (`scripts/score_lexical.py`): % of sentences where the candidate is at least 2× as long as the **reference**, in characters. A source-based ratio would flag almost all zh→en sentences. | - |
+| Table 1 (memory, time, quality) | `scripts/paper/make_main_table.py` (check) | `results/json/{quant_cost,probe16}_*.json`, `results/scores/` |
+| Figure 1 (XCOMET-XXL change per direction) | `scripts/paper/plot_rq1_heatmap.py` | `results/scores/` |
+| Figure 2 (memory vs quality, with adapters) | `scripts/paper/plot_rq2_tradeoff.py` | `results/json/probe16_*.json`, `results/scores/` |
+| Table 2 (failure rates) | `scripts/paper/make_failures_table.py` (check) | `results/json/failures.json` |
+| Table 3 (all metrics, all directions) | `scripts/paper/make_full_table.py` | `results/scores/` |
+| Figure 3 (NLL at 3 bits) | `scripts/paper/plot_nll_w3.py` | `results/json/lang_nll_*.json` |
+| Figure 4 (recovered 3-bit model) | `scripts/paper/plot_heatmap_adapter.py` | `results/json/adapter_heatmap.json` |
+| Significance (Section 3.3) | `scripts/analysis/bootstrap_ci.py` | → `results/json/bootstrap_ci.json` |
+| Sanity checks, error spans (Section 3.4, App. D) | `scripts/analysis/audit_recovery.py` | → `results/json/audit_*.json` |
+| Fine-tuning survives quantization (App. D) | `scripts/analysis/measure_delta.py` | → `results/json/delta_erasure.json` |
+| Difficulty-matched damage (Section 3.2) | `scripts/analysis/fragility_by_confidence.py` | → `results/json/fragility_by_confidence*.json` |
+| Repack is lossless and faster (Limitations) | `scripts/quantize/repack_to_w4.py`, `slurm/repack.job` | → `results/json/{repack,backend}_*.json` |
 
-The ALMA-R paper also reports **COMET-22** (`Unbabel/wmt22-comet-da`), **KIWI-22** (`Unbabel/wmt22-cometkiwi-da`) and **KIWI-XXL** (`Unbabel/wmt23-cometkiwi-da-xxl`). We compute them too (same `unbabel-comet` package) so we can compare with the paper on every metric.
+Build the PDF with `cd paper && pdflatex acl_latex && bibtex acl_latex && pdflatex acl_latex && pdflatex acl_latex`
+(needs the `inconsolata` package).
 
-Model weights are **not** installed by pip. They download from Hugging Face the first time a model is used.
+The scripts marked → need the translations and segment-level scores in `$OUTPUTS_DIR`, which the pipeline below
+produces.
 
-### Folder layout on Snellius
+## Full pipeline
 
-The venv, data and model weights live **next to** the repo, not inside it:
+Everything below ran on [Snellius](https://www.surf.nl/en/services/snellius-the-national-supercomputer) on one
+NVIDIA H100 (94 GB) per job (four for the fp16 generation). The jobs are plain Slurm scripts; outside Snellius,
+change the `module load` lines in `slurm/env.sh` and the `#SBATCH --partition` lines.
 
-```
-<project dir>/
-├── Model-Compression-MT/   # this repo (code only)
-├── venv/                   # Python environment
-├── venv-quant/             # Python environment for GPTQ (see Quantization)
-├── data/                   # datasets
-├── hf_cache/               # Hugging Face models for the metrics (HF_HOME)
-├── models/                 # LLM weights we translate with / quantize (ALMA-13B-R)
-└── outputs/                # translations and scores written by the jobs
-```
+### Folders
 
-### 1. Get the code (including the submodules)
+Large files live next to the repository. `slurm/env.sh` and `mtcompress/paths.py` read these variables:
 
-```bash
-cd <project dir>/Model-Compression-MT
-git pull
-git submodule update --init --recursive
-```
+| Variable | Default | Holds |
+|---|---|---|
+| `PROJECT_DIR` | the repository's parent folder | `venv/`, `venv-quant/`, `hf_cache/` |
+| `MODELS_DIR` | `$PROJECT_DIR/models` | fp16 ALMA-13B-R (26 GB) and the GPTQ checkpoints (3.8–12.7 GiB each) |
+| `ARTIFACTS_DIR` | `$MODELS_DIR` | adapters, repacked checkpoints (6.8 GiB each), the language identifier |
+| `OUTPUTS_DIR` | `$PROJECT_DIR/outputs` | translations, segment-level scores (about 0.5 GB) |
 
-Check that the submodules are there: `ls third_party/metricx/metricx24/predict.py third_party/ALMA/run_llmmt.py`
+Set them in your shell before submitting (commands below expand `$ARTIFACTS_DIR` at submit time), or per job: `sbatch --export=ALL,ARTIFACTS_DIR=/scratch-shared/$USER/models slurm/distill.job`.
+Run all jobs from the repository root. Job logs go to `logs/`.
 
-### 2. Create the environment
+### Environments
 
-```bash
-module purge
-module load 2024
-module load Python/3.12.3-GCCcore-13.3.0
-
-python -m venv ../venv
-source ../venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-(Run `module avail Python` to see which Python modules are available. Use Python 3.10–3.12.)
-
-### 3. Hugging Face setup (once)
-
-1. Log in on huggingface.co and **accept the license** on the [Unbabel/XCOMET-XXL](https://huggingface.co/Unbabel/XCOMET-XXL), [Unbabel/wmt23-cometkiwi-da-xxl](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) and [Unbabel/wmt22-cometkiwi-da](https://huggingface.co/Unbabel/wmt22-cometkiwi-da) pages. These models are gated.
-2. Point the model cache at `hf_cache/` next to the repo. Otherwise it goes to `~/.cache/huggingface` in your home folder. Use the absolute path, and put this in `~/.bashrc` **and** in every Slurm job script:
-   ```bash
-   export HF_HOME=<project dir>/hf_cache
-   ```
-3. Log in with a read token:
-   ```bash
-   huggingface-cli login
-   ```
-
-Compute nodes may not have internet access. If so, download the models once from the login node (they go into `HF_HOME`):
-
-```bash
-python -c "from comet import download_model as d; [d(m) for m in ['Unbabel/XCOMET-XXL', 'Unbabel/wmt23-cometkiwi-da-xxl', 'Unbabel/wmt22-cometkiwi-da', 'Unbabel/wmt22-comet-da']]"
-python -c "from huggingface_hub import snapshot_download as d; d('google/metricx-24-hybrid-xl-v2p6')"
-python -c "from transformers import AutoTokenizer; AutoTokenizer.from_pretrained('google/mt5-xl')"   # tokenizer only
-python -c "import evaluate; evaluate.load('sacrebleu')"   # run_llmmt.py loads this at startup
-```
-
-This is a lot of disk space in your home folder: XCOMET-XXL and KIWI-XXL take about 43 GB each, ALMA-13B-R 26 GB. Check with `myquota`.
-
-### 4. Download ALMA-13B-R
-
-Download it into `<project dir>/models/ALMA-13B-R`, **not** into the HF cache, and **without the adapter files**. Run this from the repo root on the login node:
-
-```bash
-source scripts/snellius/env.sh
-python -c "
-from huggingface_hub import snapshot_download
-snapshot_download('haoranxu/ALMA-13B-R',
-                  revision='831d20301232e54f96c2c9af245ea219f85786d0',
-                  local_dir='$PROJECT_DIR/models/ALMA-13B-R',
-                  ignore_patterns=['adapter_*'])
-"
-ls $PROJECT_DIR/models/ALMA-13B-R   # 6 model-*.safetensors files, no adapter_*
-```
-
-Why: the `haoranxu/ALMA-13B-R` repo holds two things, the **merged ALMA-13B-R weights** (`model-*.safetensors`, 26 GB, fp16) and a stray `adapter_config.json`. When peft is installed (it is), `from_pretrained("haoranxu/ALMA-13B-R")` sees that adapter file and silently loads **`ALMA-13B-Pretrain` + adapter** instead. `ALMA-13B-Pretrain` isn't a translation model, so you'd get the wrong model. Leaving out `adapter_*` and loading from the local folder avoids this. The revision pins the exact version of the weights.
-
-### 5. Quick checks
-
-```bash
-source ../venv/bin/activate
-python -c "import sacrebleu, comet, transformers; print(sacrebleu.__version__, transformers.__version__)"
-sacrebleu --help | head -n 3
-cd third_party/metricx && python -c "import metricx24.models; print('metricx ok')" && cd -
-```
-
-## Reproducing the ALMA-13B-R baseline
-
-Our full-precision baseline is a reproduction of the ALMA-R paper ([Xu et al. 2024](https://arxiv.org/abs/2401.08417)), scored with the paper's metrics plus ours. Paper numbers for ALMA-13B-R (Tables 9 and 10), averaged over de, cs, is, zh, ru:
-
-| | BLEU | COMET-22 | KIWI-22 | KIWI-XXL | XCOMET-XXL |
-|---|---|---|---|---|---|
-| en→xx | 27.03 | 87.74 | 83.34 | 85.74 | 94.05 |
-| xx→en | 35.45 | 85.21 | 81.33 | 82.43 | 89.11 |
-
-The per-direction numbers are in `scripts/summarize.py`.
-
-**Paper setup** (`third_party/ALMA/evals/alma_13b_r.sh` and `eval_generation.sh`):
-- **Test data:** WMT'22 for de, cs, zh and ru; WMT'21 for is. The files are in `third_party/ALMA/human_written_data/` and `third_party/ALMA/outputs/wmt22_outputs/wmt-testset/`.
-- **Generation:** beam 5, bf16, seed 42, max 256 new tokens; source length 256, or 512 for zh→en. The script doesn't set `do_sample`, so the model's `generation_config.json` applies (`do_sample=true`, temperature 0.9, top_p 0.6): the paper used beam **sampling**.
-- **Scoring:** BLEU with sacrebleu (tokenizer `zh` for Chinese targets, else `13a`); COMET-22 with a reference; KIWI-22, KIWI-XXL and XCOMET-XXL without one. All × 100.
-
-**Two generation runs:**
-- `ours`: paper decoding. This is the reproduction, compared with the paper.
-- `ours-beam`: plain beam search (`do_sample=False`), so the output is deterministic. This is the baseline the quantized models are compared against, because with sampling part of any score difference would be sampling noise.
-
-Submit all jobs **from the repo root**. `RUN` selects the translations to score: `paper` (the paper's own outputs), `ours` or `ours-beam`. Scores go to `<project dir>/outputs/<metric>/<RUN>/summary.tsv`.
-
-**Step 1: check the metrics.** Score the paper's own ALMA-13B-R translations. This should reproduce the paper's numbers (XCOMET-XXL is already done: 94.04 / 89.11):
-```bash
-sbatch --array=1-3 --export=ALL,RUN=paper scripts/snellius/score_comet.job   # 0 xcomet-xxl, 1 kiwi-xxl, 2 kiwi-22, 3 comet-22
-sbatch --export=ALL,RUN=paper scripts/snellius/score_metricx.job
-python scripts/score_lexical.py --run paper   # BLEU, chrF++, hallucination rate; seconds, fine on the login node
-python scripts/summarize.py --run paper
-```
-
-**Step 2: generate** (4× H100, both jobs can run at the same time). At the end, each job checks that there is one translation per source sentence.
-```bash
-sbatch scripts/snellius/generate_alma_r.job                             # -> outputs/alma-13b-r/wmt22
-sbatch --export=ALL,DECODING=beam scripts/snellius/generate_alma_r.job  # -> outputs/alma-13b-r-beam/wmt22
-```
-It uses `<project dir>/models/ALMA-13B-R` by default; pass `MODEL=/path` for another folder.
-
-zh→en is translated last, with source length 512 and `BATCH_LONG=1` (all other directions use the paper's batch 4). At length 512, batch 4 × 5 beams runs the 13B model out of memory on a 94 GB H100. To redo only zh→en after a crash, keep the other 9 files and pass `PAIRS_SHORT=""`:
-```bash
-sbatch --export=ALL,PAIRS_SHORT= scripts/snellius/generate_alma_r.job
-```
-
-**Step 3: score both runs** (for `RUN=ours` and `RUN=ours-beam`):
-```bash
-sbatch --export=ALL,RUN=ours scripts/snellius/score_comet.job
-sbatch --export=ALL,RUN=ours scripts/snellius/score_metricx.job
-python scripts/score_lexical.py --run ours
-```
-
-**Step 4: compare.**
-```bash
-python scripts/summarize.py --run ours --vs paper   # reproduction: vs the paper's reported numbers and vs the paper's outputs
-python scripts/summarize.py --run ours-beam --vs ours
-```
-It prints all metrics per direction, the difference with the paper, and writes `outputs/baseline/<RUN>.tsv`.
-
-Job logs go to `logs/slurm-<job-name>-<id>.out` (gitignored; the folder must exist, Slurm won't create it). Follow a job with `squeue -u $USER` and `tail -f logs/slurm-<job-name>-<id>.out`.
-
-## Quantization (GPTQ)
-
-Weight-only GPTQ with [GPTQModel](https://github.com/ModelCloud/GPTQModel), stored as real packed integers (int32-packed weights + fp16 scales/zero-points), one checkpoint per bit width.
-
-- **What is quantized:** every Linear in the 40 decoder layers (attention `q/k/v/o_proj`, MLP `gate/up/down_proj`). `embed_tokens`, the RMSNorms and `lm_head` stay fp16.
-- **Default settings:** asymmetric, group size 128, act-order (`desc_act`), damping 0.05. Bits: 2, 3, 4 or 8. See `python scripts/quantize_gptq.py --help`.
-- **Calibration:** 1024 examples from ALMA's human-written parallel **train** data (`third_party/ALMA/human_written_data/*/train.*.json`: earlier WMT test sets + Flores, no overlap with the test sets), balanced over the 10 directions, in ALMA's fine-tuning format (`<s>` + prompt + target + `</s>`). Seed 42.
-- **Kernels:** GPTQModel picks one when loading (for asymmetric weights: ExLlamaV2/TorchFused can do 4-bit, Triton 2/4/8-bit, Torch all four). All run in bf16. The generation log prints the one that was used.
-
-### Separate environment
-
-GPTQModel needs transformers ≥ 4.56 and `run_llmmt.py` needs ≤ 4.45 (see Notes), so quantization and generation with the quantized models use a second venv, `venv-quant`, next to `venv`. That also means quantized models are **not** generated with `run_llmmt.py` but with `scripts/generate_quantized.py`, which reproduces its prediction path for our settings: same prompt (`scripts/alma_prompt.py`, copied from `third_party/ALMA/utils/utils.py`), left padding to the full source length, beam 5, bf16, seed 42, 256 new tokens, same translation extraction. Tokenization of all 10 test sets is identical in both venvs (checked).
+Two virtual environments, because ALMA's generation code needs `transformers<=4.45` and GPTQModel needs `>=4.56`:
 
 ```bash
 module purge; module load 2024; module load Python/3.12.3-GCCcore-13.3.0
-python -m venv ../venv-quant
-source ../venv-quant/bin/activate
-pip install --upgrade pip
+
+# venv: ALMA-R generation, all metrics, analyses, figures
+python -m venv ../venv && source ../venv/bin/activate
+pip install -r requirements.txt && pip install -e .
+
+# venv-quant: quantization, distillation, generation with quantized models, GPU measurements
+python -m venv ../venv-quant && source ../venv-quant/bin/activate
 pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu128
-pip install -r requirements-quant.txt
+pip install -r requirements-quant.txt && pip install -e .
 ```
 
-### Steps
+`requirements.txt` explains the `transformers==4.45.2` pin. The jobs set `PYTHONPATH`, so `pip install -e .` is only
+needed to run the scripts outside Slurm.
 
-**1. Quantize** (1× H100 per bit width; the array index is the bit width):
+### Hugging Face models
+
+1. Accept the licences of the gated models
+   [Unbabel/XCOMET-XXL](https://huggingface.co/Unbabel/XCOMET-XXL),
+   [Unbabel/wmt23-cometkiwi-da-xxl](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) and
+   [Unbabel/wmt22-cometkiwi-da](https://huggingface.co/Unbabel/wmt22-cometkiwi-da), then `huggingface-cli login`.
+2. Set `export HF_HOME=$PROJECT_DIR/hf_cache` (`slurm/env.sh` does this for the jobs). XCOMET-XXL and KIWI-XXL take
+   about 43 GB each.
+3. If compute nodes have no internet, download the metric models on the login node first:
+   ```bash
+   python -c "from comet import download_model as d; [d(m) for m in ['Unbabel/XCOMET-XXL', 'Unbabel/wmt23-cometkiwi-da-xxl', 'Unbabel/wmt22-cometkiwi-da', 'Unbabel/wmt22-comet-da']]"
+   python -c "from huggingface_hub import snapshot_download as d; d('google/metricx-24-hybrid-xl-v2p6')"
+   python -c "from transformers import AutoTokenizer; AutoTokenizer.from_pretrained('google/mt5-xl')"
+   python -c "import evaluate; evaluate.load('sacrebleu')"
+   ```
+4. Download ALMA-13B-R **without its adapter files**:
+   ```bash
+   python -c "
+   from huggingface_hub import snapshot_download
+   snapshot_download('haoranxu/ALMA-13B-R', revision='831d20301232e54f96c2c9af245ea219f85786d0',
+                     local_dir='$MODELS_DIR/ALMA-13B-R', ignore_patterns=['adapter_*'])"
+   ```
+   The repository holds the merged weights and a stray `adapter_config.json`. With peft installed,
+   `from_pretrained("haoranxu/ALMA-13B-R")` then silently loads ALMA-13B-Pretrain plus that adapter, which is not a
+   translation model.
+
+### 1. Reproduce ALMA-13B-R (Section 2.1)
+
 ```bash
-sbatch --array=2,3,4,8 scripts/snellius/quantize_gptq.job   # -> <project dir>/models/ALMA-13B-R-gptq-w{2,3,4,8}g128
+sbatch slurm/generate_alma_r.job                              # paper decoding (beam sampling) -> run "ours"
+sbatch --export=ALL,DECODING=beam slurm/generate_alma_r.job   # plain beam search -> run "ours-beam", our fp16 baseline
+for run in ours ours-beam; do
+  sbatch --export=ALL,RUN=$run slurm/score_comet.job          # XCOMET-XXL, KIWI-XXL, KIWI-22, COMET-22 (array 0-3)
+  sbatch --export=ALL,RUN=$run slurm/score_metricx.job
+done
+python scripts/reproduce/score_lexical.py --run ours          # BLEU, chrF++ (CPU); same for ours-beam
+python scripts/reproduce/summarize.py --run ours --vs paper   # -> results/scores/ours.tsv, with the ALMA-R paper's numbers
 ```
-Other settings through `QUANT_ARGS`, e.g. per-channel symmetric: `sbatch --array=4 --export=ALL,QUANT_ARGS="--group-size -1 --sym" scripts/snellius/quantize_gptq.job` (-> `ALMA-13B-R-gptq-w4gch-sym`). Each folder has a `quant_meta.json` with all settings.
 
-**2. Evaluate end to end** (one job per model, 1× H100): generation, the 4 COMET metrics, MetricX-24, BLEU/chrF++/hallucination rate and `summarize.py --vs ours-beam`, one after another. Generation takes 10+ hours and scoring ~1.5 h. If the job hits its 20 h limit, submit the same command again: completed directions and metrics are skipped.
+`RUN=paper` scores the ALMA-R paper's own outputs (shipped in the ALMA submodule) to check the metric setup. Our
+reproduction is within 0.4 BLEU and 0.5 XCOMET-XXL of the paper on average. We compare all quantized models with
+`ours-beam`, because sampling would add noise to every difference.
+
+### 2. Quantize and evaluate (Sections 2.2, 3.1, 3.2)
+
 ```bash
-for q in gptq-w2g128 gptq-w3g128 gptq-w4g128 gptq-w8g128; do
-  sbatch --export=ALL,QUANT=$q scripts/snellius/eval_quantized.job   # -> outputs/$q/wmt22, outputs/<metric>/$q, outputs/baseline/$q.tsv
+sbatch --array=2,3,4,8 slurm/quantize_gptq.job   # -> $MODELS_DIR/ALMA-13B-R-gptq-w{2,3,4,8}g128 (16.5 min each)
+for q in gptq-w8g128 gptq-w4g128 gptq-w3g128 gptq-w2g128; do
+  sbatch --export=ALL,QUANT=$q slurm/eval_quantized.job   # generate + all metrics -> results/scores/$q.tsv
 done
 ```
-Default is plain beam search, to compare with `ours-beam`. `DECODING=paper` uses the paper's beam sampling, writes to run `$q-paper` and compares with `ours`. The summary tables are at the end of `logs/slurm-gptq-eval-<id>.out`.
 
-The steps can also run separately (the run name is the output folder):
+Generation takes 10+ hours per model; resubmit the same command after a timeout, finished work is skipped.
+
+### 3. Repack 3- and 2-bit weights into the 4-bit layout
+
+GPTQModel has a fused kernel for 4 bits only. `repack_to_w4.py` stores the same 3- and 2-bit values in the 4-bit
+layout, losslessly (verified on the written files), so they run on the ExLlamaV2 kernel. The adapter runs are generated
+on these copies.
+
 ```bash
-sbatch --export=ALL,QUANT=gptq-w4g128 scripts/snellius/generate_quantized.job
-sbatch --export=ALL,RUN=gptq-w4g128 scripts/snellius/score_comet.job
-sbatch --export=ALL,RUN=gptq-w4g128 scripts/snellius/score_metricx.job
-python scripts/score_lexical.py --run gptq-w4g128
-python scripts/summarize.py --run gptq-w4g128 --vs ours-beam
+sbatch slurm/repack.job   # -> $ARTIFACTS_DIR/ALMA-13B-R-gptq-w{3,2}g128-as-w4, speed and drift records in results/json/
 ```
+
+### 4. Distil, generate, score (Sections 2.3, 3.3; Appendix B)
+
+The exact commands of the three runs in the paper are at the top of `slurm/distill.job`:
+
+```bash
+sbatch slurm/distill.job                                                            # w3, r = 16, 30K examples
+sbatch --export=ALL,BITS=2,ADAPTER=$ARTIFACTS_DIR/ALMA-13B-R-gptq-w2g128-kd-lora-r64,EXTRA="--r 64 --alpha 128" slurm/distill.job
+sbatch --export=ALL,BITS=2,ADAPTER=$ARTIFACTS_DIR/ALMA-13B-R-gptq-w2g128-kd-lora-r64-cont,EXTRA="--r 64 --alpha 128 --n-examples 60000 --init-adapter $ARTIFACTS_DIR/ALMA-13B-R-gptq-w2g128-kd-lora-r64" slurm/distill.job
+
+sbatch --export=ALL,NLL=1,TAG=w3kd slurm/gen_lora.job                               # NLL + generation, w3 + adapter
+BITS=2 ADAPTER=$ARTIFACTS_DIR/ALMA-13B-R-gptq-w2g128-kd-lora-r64-cont KD_RUN=gptq-w2g128-as4-kd-r64-cont NLL=1 TAG=w2kd-r64-cont \
+  sbatch --export=ALL slurm/gen_lora.job
+sbatch --export=ALL,RUN=gptq-w3g128-as4-kd slurm/score_full.job                     # all metrics -> results/scores/
+sbatch --export=ALL,RUN=gptq-w2g128-as4-kd-r64-cont slurm/score_full.job
+```
+
+Each training run takes 40–80 minutes on one H100 (peak 36–37 GiB). The adapter weights are not in this
+repository; `results/distill_runs/` holds their configs and training logs.
+
+### 5. Analyses
+
+| What | Command | Output |
+|---|---|---|
+| Teacher-forced NLL per language | `sbatch slurm/lang_nll.job` (adapters: `gen_lora.job` with `NLL=1`) | `results/json/lang_nll_*.json` |
+| Peak memory and time, batch 4 and 16 | `sbatch slurm/probe.job` | `results/json/probe16_<tag>.json` |
+| … at batch 1 | `TAGS=fp16:w8:w4:w3:w2 BATCHES=1 SUFFIX=_b1 sbatch --export=ALL slurm/probe.job` | `probe16_<tag>_b1.json` |
+| … with adapters | `sbatch slurm/probe_adapter.job` (`ONLY=`, `BATCHES=`, `SUFFIX=` as above) | `probe16_<tag>kd*.json` |
+| Checkpoint size, load time, kernels | `sbatch slurm/quant_cost.job`, `sbatch slurm/backends.job` | `quant_cost_*.json`, `backend_*.json` |
+| Failure modes (Table 2) | `python scripts/analysis/score_failures.py` (needs the [NLLB language identifier](https://dl.fbaipublicfiles.com/nllb/lid/lid218e.bin) in `$ARTIFACTS_DIR/lid/`) | `results/json/failures.json` |
+| Paired bootstrap CIs | `python scripts/analysis/bootstrap_ci.py` | `results/json/bootstrap_ci.json` |
+| Sanity checks and error analysis of w2 + adapter | `python scripts/analysis/audit_recovery.py` | `results/json/audit_*.json` |
+| Damage vs sentence difficulty | `python scripts/analysis/fragility_by_confidence.py [--bits 4 --out …]` | `results/json/fragility_by_confidence*.json` |
+| Activation outliers per language | `sbatch slurm/measure_channels.job` | `$OUTPUTS_DIR/channels/channels_fp16.npz` |
+| Does quantization erase the fine-tuning? | `python scripts/analysis/measure_delta.py --pretrain-dir … --out …` (see its docstring) | `results/json/delta_erasure.json` |
+
+The CPU analyses take under a minute each on a login node.
 
 ## Notes
 
-- **Reproducibility:** we don't store weights in git. Instead we record exactly which versions were used: `requirements.txt` for packages, the submodule commits for the ALMA and MetricX code, and the Hugging Face model revision (commit hash) for weights. Look up a revision with `ls $HF_HOME/hub/models--google--metricx-24-hybrid-xl-v2p6/snapshots/` and log it with the results.
+- **Evaluation protocol.** As in ALMA-R: beam 5, bf16, seed 42, at most 256 new tokens, source length 256 (512 for
+  zh→en); BLEU with sacreBLEU (`zh` tokenizer for Chinese targets, else `13a`); COMET-22 and MetricX-24 with the
+  reference, XCOMET-XXL and both KIWI models without it. Scores ×100, except MetricX-24 (0–25, lower is better).
+- **Quantization.** GPTQModel 4.2.5; asymmetric, group size 128, act-order, damping 0.05; 1,024 calibration
+  sentences from ALMA's human-written training data, balanced over the ten directions. Embeddings, norms and the
+  output head stay fp16.
+- **Data.** ALMA's training data (calibration and distillation) does not overlap the WMT'22/'21 test sets; it does
+  contain FLORES-200, so FLORES is not a clean test set for these models.
+- **Reproducibility.** Packages are pinned in the requirements files, code in the submodule commits, and the model
+  in its Hugging Face revision. Each run is a single seed; the paper reports paired bootstrap intervals over
+  sentences, not seed variance.
+- **MetricX-24** comes from the `third_party/metricx` submodule (not on PyPI) and runs on `transformers==4.45.2`.
+  **XCOMET-XXL** needs about 43 GB of GPU memory, more than a 40 GB A100.
 
-- **transformers version (4.45.2):** ALMA's `install_alma.sh` pins `4.51.1`, but their own generation code doesn't run on it: `run_llmmt.py` imports `is_torch_tpu_available` (removed after 4.48) and `utils/trainer_llmmt.py` imports `transformers.deepspeed` (removed after 4.45). `4.45.2` is the newest version that has both, and COMET and MetricX work with it as well (MetricX's own requirements pin `4.30.2`, but the MT5 internals it uses are unchanged). One env for everything.
-- **Running MetricX** (from `third_party/metricx`; the input jsonl has the fields `source`, `hypothesis`, `reference`):
-  ```bash
-  python -m metricx24.predict \
-    --tokenizer google/mt5-xl \
-    --model_name_or_path google/metricx-24-hybrid-xl-v2p6 \
-    --max_input_length 1536 --batch_size 1 \
-    --input_file input.jsonl --output_file output.jsonl
-  ```
-  Add `--qe` to score without a reference. Lower is better (range 0–25).
-- **XCOMET-XXL** has 10.7B parameters (about 43 GB on disk, it doesn't fit on Snellius' 40 GB A100s, so the jobs use the `gpu_h100` partition). The ALMA-R paper uses it without a reference (source + translation only) and reports score × 100. Higher is better (range 0–1).
+## Citation
+
+```bibtex
+@misc{dignum2026lowbit,
+  title  = {Low-Bit Quantization for Multilingual Machine Translation},
+  author = {Dignum, Krijn and Massafra, Francesco and Vork, Matthijs and Wilde, Max and Wolting, Reinout},
+  year   = {2026},
+  note   = {University of Amsterdam}
+}
+```
+
+This work builds on [ALMA](https://github.com/fe1ixxu/ALMA) (MIT), [MetricX](https://github.com/google-research/metricx)
+(Apache 2.0), [GPTQModel](https://github.com/ModelCloud/GPTQModel) and [COMET](https://github.com/Unbabel/COMET).
