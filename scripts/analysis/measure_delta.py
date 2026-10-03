@@ -21,8 +21,8 @@ Usage (CPU, login node is fine; ~2-3 GB RAM per module):
   python scripts/analysis/measure_delta.py \
       --pretrain-dir <download dir> --layers 0 20 39 \
       --out results/json/delta_erasure.json
-The pretrain shards are haoranxu/ALMA-13B-Pretrain pytorch_model-0000{1,3,6}-of-00006.bin
-(layers 0-7, 15-22, 38-39); adapter_model.bin from haoranxu/ALMA-13B-Pretrain-LoRA.
+<download dir> holds pytorch_model.bin.index.json and pytorch_model-0000{1,3,6}-of-00006.bin from
+haoranxu/ALMA-13B-Pretrain (layers 0-7, 15-22, 38-39; 22 GB) and adapter_model.bin from haoranxu/ALMA-13B-Pretrain-LoRA.
 """
 import argparse
 import json
@@ -63,7 +63,9 @@ class TorchBin:
 
     def __init__(self, d):
         self.d = Path(d)
-        self.map = json.load(open(self.d / "pre_index.json"))["weight_map"]
+        index = self.d / "pytorch_model.bin.index.json"  # the Hugging Face name; older runs renamed it
+        index = index if index.exists() else self.d / "pre_index.json"
+        self.map = json.load(open(index))["weight_map"]
         self.cur, self.sd = None, None
 
     def get(self, name):

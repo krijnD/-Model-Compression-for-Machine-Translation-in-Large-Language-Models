@@ -12,7 +12,8 @@
 # Complete files are skipped, so a job that hits its limit can be resubmitted.
 # Run several of these in parallel only with DISJOINT $PAIRS (no two jobs on the same direction).
 #   BITS=3            : checkpoint models/ALMA-13B-R-gptq-w${BITS}g128, repacked copy in $ARTIFACTS_DIR (slurm/repack.job; default 3)
-#   ADAPTER=<dir>     : distill_lora.py output (default: the w3 rank-16 adapter)
+#   ADAPTER=<dir>     : distill_lora.py output (default: the w3 rank-16 adapter); ADAPTER=none for the plain
+#                       repacked model (the paper's gptq-w3g128-as4 run: ADAPTER=none KD_RUN=gptq-w3g128-as4)
 #   KD_RUN=<name>     : output folder in $OUTPUTS_DIR (not RUN: env.sh already sets RUN=ours)
 # The paper's runs: KD_RUN=gptq-w3g128-as4-kd (defaults) and
 #   BITS=2 ADAPTER=$ARTIFACTS_DIR/ALMA-13B-R-gptq-w2g128-kd-lora-r64-cont KD_RUN=gptq-w2g128-as4-kd-r64-cont
@@ -37,7 +38,11 @@ PAIRS="${PAIRS//:/,}"   # also accept a:b:c. A comma list inside sbatch --export
                         # variables (only the first pair survives): pass PAIRS via the environment or with ":"
 KD_RUN="${KD_RUN:-gptq-w${BITS}g128-as4-kd}"
 OUT="$OUTPUTS_DIR/$KD_RUN/wmt22"
-[ -f "$ADAPTER/adapter.safetensors" ] || { echo "ERROR: no adapter in $ADAPTER"; exit 1; }
+ADAPTER_ARGS=()
+if [ "$ADAPTER" != none ]; then
+  [ -f "$ADAPTER/adapter.safetensors" ] || { echo "ERROR: no adapter in $ADAPTER"; exit 1; }
+  ADAPTER_ARGS=(--adapter "$ADAPTER")
+fi
 echo "w$BITS + $ADAPTER -> $OUT | pairs: $PAIRS | $(nvidia-smi --query-gpu=name --format=csv,noheader)"
 
 if [ "${NLL:-0}" = 1 ]; then
@@ -61,7 +66,7 @@ done
 gen() {  # $1 pairs, $2 source length, $3 batch
   [ -z "$1" ] && return 0
   echo "##### generate $KD_RUN: $1 (source $2, batch $3) ($(date))"
-  python scripts/distill/generate_lora.py --model "$AS4" --adapter "$ADAPTER" --pairs "$1" --out "$OUT" \
+  python scripts/distill/generate_lora.py --model "$AS4" "${ADAPTER_ARGS[@]}" --pairs "$1" --out "$OUT" \
     --max-source-length "$2" --batch-size "$3" --max-new-tokens 256 --num-beams 5
 }
 gen "$short" 256 "${BATCH:-4}"
