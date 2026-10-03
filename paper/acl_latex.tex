@@ -326,8 +326,8 @@ w2+KD & 4.2 & 5.5 &  9.2 & 0.91 & 27.8 & 88.1 & 3.16 \\
 \end{tabular}
 \caption{Memory and translation quality of ALMA-13B-R under GPTQ, without and
 with the distilled adapter (KD). \emph{Peak}: peak GPU memory when translating
-de$\rightarrow$en with beam 5 at batch size $b$; adapters are counted in bf16.
-\emph{Time}: seconds per sentence at $b{=}4$ on one H100, on a fixed workload.
+de$\rightarrow$en with beam 5 at batch size $b$, adapters in bf16.
+\emph{Time}: s/sentence at $b{=}4$ on one H100. Both use packed weights (App.~\ref{app:training}).
 Quality is averaged over the ten directions; XCOMET is XCOMET-XXL and MetricX is
 MetricX-24 (lower is better).}
 \label{tab:main}
@@ -542,8 +542,9 @@ fused kernel; at the other bit-widths, the weights are dequantized to 16-bit
 precision at every forward pass, so translation becomes slower as the bit-width
 decreases (the 3-bit model is $3.3\times$ slower per sentence than full
 precision). This is a kernel limitation, not an inherent cost: storing the same
-3-bit values losslessly in the 4-bit layout already makes generation
-2.3--2.6$\times$ faster. Fused low-bit kernels would be needed for low-bit
+3-bit values losslessly in the 4-bit layout already makes 3-bit generation
+2.3--2.6$\times$ faster, at the cost of the larger 4-bit layout in memory
+(Appendix~\ref{app:training}). Fused low-bit kernels would be needed for low-bit
 models to be fast as well as small.
 
 \paragraph{Incomplete recovery at 2 bits.} Distillation recovers the translation
@@ -629,8 +630,8 @@ en$\rightarrow$de BLEU ($+1.0$).
 \includegraphics[width=\textwidth]{figures/w3_adapter_heatmap.pdf}
 \caption{Difference to full precision (grey column: absolute fp16 scores) of
 the 4-bit, plain 3-bit and recovered 3-bit models, on the four directions scored
-first. The 3-bit columns use the repacked 4-bit-layout kernel used for
-generation.}
+first. Both 3-bit columns were generated on the repacked weights
+(Appendix~\ref{app:training}), so they differ only by the adapter.}
 \label{fig:adapter}
 \end{figure*}
 
@@ -662,10 +663,23 @@ run of 60K examples (1{,}873 steps) with a fresh learning-rate schedule, because
 its held-out KL was still falling when the first schedule ended. Each run takes
 40--80 minutes on one H100 (peak memory 36--37\,GiB).
 
-\paragraph{Kernels.} Training runs on the packed GPTQ weights with a PyTorch
-kernel that supports backpropagation. For generation, the 3- and 2-bit weights
-are repacked losslessly into the 4-bit layout to use the faster ExLlamaV2
-kernel; the adapter is applied on top of either kernel.
+\paragraph{Kernels and weight layout.} Training runs on the packed GPTQ weights
+with a PyTorch kernel that supports backpropagation. All memory and latency
+numbers (Table~\ref{tab:main}, Figure~\ref{fig:rq2}) are measured on the packed
+checkpoints, with GPTQModel's default kernel for each bit-width (ExLlamaV2 for
+4 bits, Triton for 8 and 2 bits, PyTorch for 3 bits), for the plain and the
+recovered models alike. The translations of the plain models also come from the
+packed checkpoints. Only the translations of the recovered models were generated
+differently: to save GPU time, the 3- and 2-bit weights were repacked losslessly
+into the 4-bit layout, which the faster ExLlamaV2 kernel accepts, and the
+adapter was applied on top. The repacked weights are identical, but the kernel
+computes in fp16 instead of bf16, so beam search can choose different outputs:
+on the first 200 sentences, 80\% of the de$\rightarrow$en and 39\% of the
+en$\rightarrow$is translations of the plain 3-bit model stay the same, and BLEU
+changes by 0.2 and 0.4 points. Figure~\ref{fig:adapter} therefore compares the
+recovered and the plain 3-bit model on the same repacked kernel. The 4-bit layout
+also uses more memory: at batch size 4, the repacked 3-bit model peaks at
+12.3\,GiB instead of 10.1\,GiB.
 
 \section{Computational Requirements}
 \label{app:compute}
