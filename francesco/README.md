@@ -86,7 +86,10 @@ to fp16), without touching the quantizer. The same recipe takes 2-bit GPTQ from 
 2. **`results/RESULTS.md`**: every number in copy-ready tables, regenerated from the files on disk
    (`../venv/bin/python francesco/analysis/make_results_md.py`).
 3. **`results/figures/`**: fig 7 training curves, **fig 8** the w3 story, **fig 9** the w2 story, **fig 10** heatmap with the
-   adapter (figs 1–6: grid and cost, from `analysis/make_report.py`).
+   adapter (figs 1–6: grid and cost, from `analysis/make_report.py`). Report-style figures for the w2 recovery
+   (`analysis/plot_w2_recovery.py`): **fig 11** BLEU as % of fp16 per direction (w2, w2 + adapter, w3, w3 + adapter),
+   **fig 12** model size vs quality, **fig 13** peak GPU memory vs quality on the packed 2/3-bit checkpoints (adapter
+   memory estimated, not measured: the fast-kernel runs store w2/w3 in the 4-bit container).
 4. **`docs/`**: the full write-ups, in the order the work happened:
 
 | doc | what it covers |

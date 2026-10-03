@@ -26,10 +26,16 @@ J = REPO / "francesco/results/json"
 # system name -> (generation folder, xcomet folder)
 SYS = {"fp16": ("alma-13b-r-beam", "ours-beam"), "w4": ("gptq-w4g128", "gptq-w4g128"),
        "w3": ("gptq-w3g128-as4", "gptq-w3g128-as4"), "w3kd": ("gptq-w3g128-as4-kd", "gptq-w3g128-as4-kd"),
-       "w2": ("gptq-w2g128", "gptq-w2g128"), "w2kd": ("gptq-w2g128-as4-kd-r64", "gptq-w2g128-as4-kd-r64")}
+       "w2": ("gptq-w2g128", "gptq-w2g128"), "w2kd": ("gptq-w2g128-as4-kd-r64", "gptq-w2g128-as4-kd-r64"),
+       "w3grid": ("gptq-w3g128", "gptq-w3g128"),  # plain w3 as scored in the grid (all 10 directions)
+       "w2kdc": ("gptq-w2g128-as4-kd-r64-cont", "gptq-w2g128-as4-kd-r64-cont")}  # final 2-bit adapter
+ALL10 = ["de-en", "cs-en", "is-en", "zh-en", "ru-en", "en-de", "en-cs", "en-is", "en-zh", "en-ru"]
 STUDIES = {  # study -> (pairs, systems, kd, base, extra comparisons kd - x)
     "w3+KD": (["is-en", "en-is", "de-en", "en-de"], ["fp16", "w4", "w3", "w3kd"], "w3kd", "w3", ["w4"]),
     "w2+KD r64": (["is-en", "de-en"], ["fp16", "w3", "w2", "w2kd"], "w2kd", "w2", ["w3"]),
+    # paper: all ten directions, plain w3 from the grid (the repacked w3 exists for 4 directions only)
+    "w3+KD all": (ALL10, ["fp16", "w4", "w3grid", "w3kd"], "w3kd", "w3grid", ["w4"]),
+    "w2+KD all": (ALL10, ["fp16", "w3grid", "w2", "w2kdc"], "w2kdc", "w2", ["w3grid"]),
 }
 
 
@@ -64,11 +70,11 @@ def main():
     ap.add_argument("--seed", type=int, default=12345)
     a = ap.parse_args()
     rng = np.random.default_rng(a.seed)
-    bleu = BLEU()  # 13a: every target here is en/is/de
     res = {}
     for study, (pairs, systems, kd, base, extra) in STUDIES.items():
         for pair in pairs:
             s, t = pair.split("-")
+            bleu = BLEU(tokenize="zh" if t == "zh" else "13a")  # as scripts/score_lexical.py
             refs = lines(TESTSET / f"{s}{t}/test.{pair}.{t}")
             n = len(refs)
             stats = {k: bleu_stats(bleu, lines(OUT / SYS[k][0] / "wmt22" / f"test-{pair}"), refs) for k in systems}

@@ -1,0 +1,38 @@
+#!/bin/bash
+#SBATCH --job-name=probe-adapter
+#SBATCH --partition=gpu_h100
+#SBATCH --gpus-per-node=1
+#SBATCH --cpus-per-task=16
+#SBATCH --time=01:30:00
+#SBATCH --output=logs/slurm-%x-%j.out
+
+# Peak GPU memory (and time) WITH the distilled adapters, on the same fixed workload as probe16.sbatch
+# (de-en, source 256, beam 5, BATCH=4 and 16, run_probe.py), so the numbers sit next to probe16_<tag>.json.
+#   w3kd   / w2kd   : packed 3-/2-bit checkpoints (Torch / Triton kernel): the real 2/3-bit footprint (fig 13)
+#   w3as4kd/ w2as4kd: the repacked 4-bit-container copies (ExllamaV2): what the generations actually ran on
+# Adapters are held in fp32, as in generate_lora.py. Output: results/json/probe16_<tag>.json.
+# Peak memory doesn't depend on the GPU model; s/line does, so time is only comparable on the same partition.
+#   sbatch --partition=gpu_a100 francesco/analysis/sbatch/probe_adapter.job
+#   ONLY=w2kd BATCHES=1:2 SUFFIX=_b1 ... : one config, other batch sizes (":" separated), probe16_<tag><SUFFIX>.json
+set -euo pipefail
+cd "$SLURM_SUBMIT_DIR"
+VENV=venv-quant
+source scripts/snellius/env.sh
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+export CUDA_DEVICE_ORDER=PCI_BUS_ID
+
+M="$PROJECT_DIR/models"; S="/scratch-shared/$USER/models"
+A3="$S/ALMA-13B-R-gptq-w3g128-kd-lora"; A2="$S/ALMA-13B-R-gptq-w2g128-kd-lora-r64-cont"
+nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
+for spec in "w3kd:$M/ALMA-13B-R-gptq-w3g128:$A3" "w2kd:$M/ALMA-13B-R-gptq-w2g128:$A2" \
+            "w3as4kd:$S/ALMA-13B-R-gptq-w3g128-as-w4:$A3" "w2as4kd:$S/ALMA-13B-R-gptq-w2g128-as-w4:$A2"; do
+  IFS=: read -r tag model adapter <<< "$spec"
+  [ -n "${ONLY:-}" ] && [ "$tag" != "$ONLY" ] && continue
+  echo "----- $tag $(date +%H:%M:%S)"
+  python francesco/analysis/run_probe.py --model "$model" --adapter "$adapter" --pair de-en \
+    --batches "$(echo "${BATCHES:-4,16}" | tr ':' ',')" --reps "${REPS:-3}" --max-source-length 256 \
+    --max-new-tokens 256 --num-beams 5 --dtype bfloat16 \
+    --out "$REPO_DIR/francesco/results/json/probe16_${tag}${SUFFIX:-}.json" \
+    || echo "##### $tag FAILED (see above)"
+done
+echo "##### done ($(date))"

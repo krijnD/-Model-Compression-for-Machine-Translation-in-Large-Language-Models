@@ -11,6 +11,8 @@
 # Uses run_probe.py (the batch-size study), one process per checkpoint, writing probe16_<tag>.json
 # so the original probe_<model>.json files are left alone. Read-only, one free H100.
 #   sbatch francesco/analysis/sbatch/probe16.sbatch
+#   TAGS=fp16:w8 BATCHES=1 SUFFIX=_b1 ... : other batch sizes, written to probe16_<tag><SUFFIX>.json
+#   (always set SUFFIX with other BATCHES, or the batch-4/16 files are overwritten)
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 VENV=venv-quant
@@ -18,7 +20,7 @@ source scripts/snellius/env.sh
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
 
-LIST="${TAGS:-fp16,w8,w4,w3,w2}"
+LIST="${TAGS:-fp16,w8,w4,w3,w2}"; LIST="${LIST//:/,}"
 echo "##### batch-16 probe tags=$LIST ($(date))"
 nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv,noheader
 for tag in ${LIST//,/ }; do
@@ -29,9 +31,9 @@ for tag in ${LIST//,/ }; do
   [ -d "$model" ] || { echo "missing $model"; exit 1; }
   echo "----- $tag $(date +%H:%M:%S)"
   python francesco/analysis/run_probe.py --model "$model" --pair "${PAIR:-de-en}" \
-    --batches "${BATCHES:-4,16}" --reps "${REPS:-3}" --max-source-length 256 \
+    --batches "$(echo "${BATCHES:-4,16}" | tr ':' ',')" --reps "${REPS:-3}" --max-source-length 256 \
     --max-new-tokens 256 --num-beams 5 --dtype bfloat16 \
-    --out "$REPO_DIR/francesco/results/json/probe16_${tag}.json" \
+    --out "$REPO_DIR/francesco/results/json/probe16_${tag}${SUFFIX:-}.json" \
     || echo "##### tag $tag FAILED (see above)"
 done
 echo "##### done ($(date))"

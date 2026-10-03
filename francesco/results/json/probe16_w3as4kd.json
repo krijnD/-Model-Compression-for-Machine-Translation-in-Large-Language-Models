@@ -1,0 +1,38 @@
+{
+ "model": "/scratch-shared/scur0517/models/ALMA-13B-R-gptq-w3g128-as-w4",
+ "adapter": "/scratch-shared/scur0517/models/ALMA-13B-R-gptq-w3g128-kd-lora",
+ "kernels": [
+  "ExllamaV2QuantLinear"
+ ],
+ "quant_linears": 280,
+ "pair": "de-en",
+ "reps": 3,
+ "per_batch": {
+  "4": {
+   "batch": 4,
+   "times_s": [
+    3.677,
+    3.659,
+    3.664
+   ],
+   "median_s": 3.664,
+   "s_per_seq_sent": 0.916,
+   "peak_alloc_mib": 13185.7,
+   "peak_reserved_mib": 13668.0
+  },
+  "16": {
+   "batch": 16,
+   "times_s": [
+    9.282,
+    9.282,
+    9.281
+   ],
+   "median_s": 9.282,
+   "s_per_seq_sent": 0.58,
+   "peak_alloc_mib": 28228.1,
+   "peak_reserved_mib": 29196.0
+  }
+ },
+ "dequant_once_s": null,
+ "dequant_modules": 280
+}

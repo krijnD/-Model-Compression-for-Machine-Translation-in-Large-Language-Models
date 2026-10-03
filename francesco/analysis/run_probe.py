@@ -77,6 +77,8 @@ def main():
     p.add_argument("--dtype", default="bfloat16")
     p.add_argument("--device", default="cuda:0")
     p.add_argument("--out", default=str(JSON / "probe_w2.json"))
+    p.add_argument("--adapter", help="LoRA folder from distill_lora.py, applied after loading (kept in fp32, as in "
+                   "generate_lora.py), so its memory is part of the measured peak")
     args = p.parse_args()
 
     batches = [int(b) for b in args.batches.split(",")]
@@ -91,6 +93,11 @@ def main():
         from transformers import AutoModelForCausalLM
         model = AutoModelForCausalLM.from_pretrained(args.model, torch_dtype=getattr(torch, args.dtype),
                                                      device_map={"": args.device})
+    if args.adapter:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import lora
+        cfg = lora.load(model.model, args.adapter)
+        print(f"adapter={args.adapter} r={cfg['r']} steps={cfg['steps']}", flush=True)
     model.eval()
     kernels = sorted({type(m).__name__ for m in model.model.modules() if "QuantLinear" in type(m).__name__})
     n_quant = sum(1 for m in model.model.modules() if isinstance(m, BaseQuantLinear))
@@ -108,7 +115,7 @@ def main():
     suffix = get_key_suffix(tgt)
     print(f"pair={args.pair} prompts={len(prompts)}", flush=True)
 
-    results = {"model": args.model, "kernels": kernels, "quant_linears": n_quant,
+    results = {"model": args.model, "adapter": args.adapter, "kernels": kernels, "quant_linears": n_quant,
                "pair": args.pair, "reps": args.reps, "per_batch": {}}
 
     # warmup on the largest batch so lazy init (Triton JIT/autotune) is not charged to any row

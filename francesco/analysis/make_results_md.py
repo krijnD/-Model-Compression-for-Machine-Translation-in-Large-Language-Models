@@ -7,6 +7,7 @@ Sources, all read fresh on every run, so rerun this after any job finishes:
   outputs/<run>/wmt22, outputs/xcomet-xxl/<run>  adapter generations and their XCOMET-XXL
   results/json/bootstrap_ci.json                 paired bootstrap 95 % CIs (bootstrap_ci.py)
   results/distill_runs/<adapter>/train_log.jsonl training / held-out KL (copied from /scratch-shared)
+  results/json/failures.json, audit_<run>.json   failure taxonomy and recovery audit (score_failures.py, audit_recovery.py)
 Missing inputs are shown as "–" (e.g. a job still running).
 
   ../venv/bin/python francesco/analysis/make_results_md.py
@@ -26,7 +27,7 @@ TESTSET = REPO / "third_party/ALMA/outputs/wmt22_outputs/wmt-testset"
 RES = REPO / "francesco/results"
 J = RES / "json"
 PAIRS = ["de-en", "cs-en", "is-en", "zh-en", "ru-en", "en-de", "en-cs", "en-is", "en-zh", "en-ru"]
-SIZE = {"fp16": 24.24, "w8": 12.72, "w4": 6.76, "w3": 5.27, "w2": 3.78}
+SIZE = {"fp16": 24.24, "w8": 12.72, "w4": 6.76, "w3": 5.27, "w2": 3.78, "w2+KD": 4.25}
 DASH = "–"
 
 
@@ -82,8 +83,9 @@ def main():
           f"method and job history: `docs/06-distillation.md`.*\n"]
 
     # 1. grid
-    md.append("## 1. Plain GPTQ grid (fp16, w8, w4, w3, w2): averages over the 5 directions each way\n")
-    grid = [("fp16", "ours-beam"), ("w8", "gptq-w8g128"), ("w4", "gptq-w4g128"), ("w3", "gptq-w3g128"), ("w2", "gptq-w2g128")]
+    md.append("## 1. GPTQ grid (fp16, w8, w4, w3, w2) + w2 with the distilled r64 adapter: averages over the 5 directions each way\n")
+    grid = [("fp16", "ours-beam"), ("w8", "gptq-w8g128"), ("w4", "gptq-w4g128"), ("w3", "gptq-w3g128"), ("w2", "gptq-w2g128"),
+            ("w2+KD", "gptq-w2g128-as4-kd-r64-cont")]
     mets = ["bleu", "chrf", "comet-22", "xcomet-xxl", "kiwi-22", "kiwi-xxl", "metricx-24", "halluc"]
     rows = []
     for name, run in grid:
@@ -183,6 +185,49 @@ def main():
                      ["w3 + KD r16", "5.27", "0.12", "5.39", "6.76"], ["w2 + KD r64", "3.78", "0.47", "4.25", "6.76"]]))
     md.append("\nGeneration speed (de-en, batch 4, beam 5, H100): fp16 0.359 s/line; w4 0.461; w3 on Torch 1.188; "
               "w3 repacked on ExllamaV2 0.470 (2.5×). Details: `docs/04-kernel-repack.md` §8.\n")
+
+    # 7. failure modes and recovery audit
+    md.append("## 7. Failure modes and recovery audit (`docs/06-distillation.md` §5.8)\n")
+    fp = J / "failures.json"
+    if fp.exists():
+        fl = json.load(open(fp))
+        names = {"reference": "reference (LID noise floor)", "ours-beam": "fp16", "gptq-w8g128": "w8",
+                 "gptq-w4g128": "w4", "gptq-w3g128": "w3", "gptq-w3g128-as4-kd": "w3 + KD r16",
+                 "gptq-w2g128": "w2", "gptq-w2g128-as4-kd-r64": "w2 + KD r64",
+                 "gptq-w2g128-as4-kd-r64-cont": "w2 + KD r64-cont"}
+        for kind, title in [("any", "any failure"), ("osc", "oscillation (TNG, 4-gram, t = 2)"),
+                            ("off_target", "off-target"), ("copy", "source copy"), ("trunc", "truncated (< 0.5× reference)")]:
+            md.append(f"**{title}**, % of segments\n")
+            rows = [[names.get(run, run)] + [f(r[p].get(kind)) if p in r else DASH for p in PAIRS]
+                    for run, r in fl.items() if kind in next(iter(r.values()))]
+            md.append(table(["run"] + PAIRS, rows))
+            md.append("")
+        md.append("Empty outputs: 0 for every run except plain w2 (≤ 0.16 %). Off-target = fastText NLLB LID (lid218e) "
+                  "label ≠ target; for a Chinese target, fewer than half of the letters are Han (the LID mislabels "
+                  "unsegmented Chinese). Copy = output equals the source after normalisation, and the reference doesn't.\n")
+    else:
+        md.append(f"{DASH} (run `analysis/score_failures.py`)\n")
+    for ap in sorted(J.glob("audit_*.json")):
+        au = json.load(open(ap))
+        run = ap.stem.removeprefix("audit_")
+        md.append(f"**Recovery audit of `{run}`** (`analysis/audit_recovery.py`; fp16 / w2 + KD / plain w3)\n")
+        g = lambda p, k, m: au[p]["sys"].get(k, {}).get(m)  # noqa: E731
+        rows = []
+        for p in PAIRS:
+            if p not in au:
+                continue
+            q = au[p]["sys"]["w2+KD"].get("delta_vs_fp16_by_srclen_quartile")
+            rows.append([p, f(au[p]["overlap_8gram_src_pct"], 1),
+                         " / ".join(f(g(p, k, "xcomet")) for k in ("fp16", "w2+KD", "w3")),
+                         " / ".join(f(g(p, k, "critical_spans"), 0) for k in ("fp16", "w2+KD", "w3")),
+                         " / ".join(f(g(p, k, "xcomet_lt_0.5_pct"), 1) for k in ("fp16", "w2+KD", "w3")),
+                         " / ".join(f(v, 1, sign=True) for v in q) if q else DASH,
+                         f(g(p, "w2+KD", "bleu_vs_fp16_output"), 1), f(g(p, "w4", "bleu_vs_fp16_output"), 1)])
+        md.append(table(["pair", "test/train 8-gram overlap %", "XCOMET-XXL", "critical spans", "XCOMET < 0.5 %",
+                         "w2 + KD − fp16 XCOMET by source-length quartile (short → long)",
+                         "BLEU vs fp16 output: w2 + KD", "w4"], rows))
+        md.append("\nWorst 40 segments vs fp16 per direction: `results/audit/<pair>.worst_vs_fp16.tsv`. "
+                  "FLORES dev/devtest is inside ALMA's training data, so it isn't an out-of-distribution test.\n")
 
     (RES / "RESULTS.md").write_text("\n".join(md), encoding="utf-8")
     print(f"wrote {RES / 'RESULTS.md'}")
