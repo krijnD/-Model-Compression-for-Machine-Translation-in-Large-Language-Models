@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mtcompress"
 version = "1.0.0"
 description = "Low-bit GPTQ quantization of ALMA-13B-R and adapter distillation for multilingual MT"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 # Dependencies are pinned in requirements.txt (evaluation) and requirements-quant.txt (GPTQ, distillation).
 
 [tool.setuptools]

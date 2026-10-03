@@ -20,7 +20,7 @@ source slurm/env.sh
 BITS="${SLURM_ARRAY_TASK_ID:-${BITS:-4}}"
 echo "Bits: $BITS | extra args: ${QUANT_ARGS:-none}"
 python scripts/quantize/quantize_gptq.py \
-  --model "${MODEL:-$PROJECT_DIR/models/ALMA-13B-R}" \
-  --out-root "$PROJECT_DIR/models" \
+  --model "${MODEL:-$MODELS_DIR/ALMA-13B-R}" \
+  --out-root "$MODELS_DIR" \
   --bits "$BITS" \
   ${QUANT_ARGS:-}

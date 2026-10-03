@@ -11,7 +11,7 @@
 #   2. COMET family  score_comet.job, the 4 metrics in turn    -> outputs/{xcomet-xxl,kiwi-xxl,kiwi-22,comet-22}/$QUANT
 #   3. MetricX-24    score_metricx.job                         -> outputs/metricx-24/$QUANT
 #   4. lexical       score_lexical.py (BLEU, chrF++, halluc)   -> outputs/{bleu,chrf,halluc}/$QUANT
-#   5. summary       summarize.py --vs $VS                     -> outputs/baseline/$QUANT.tsv
+#   5. summary       summarize.py --vs $VS                     -> results/scores/$QUANT.tsv
 # Time: generation ~10+ h, scoring ~1.5 h. If the job hits the time limit, resubmit the same command:
 # finished directions and finished metrics are skipped.
 #   QUANT=gptq-w4g128 : model folder models/ALMA-13B-R-$QUANT (required)
@@ -32,7 +32,7 @@ case "$DECODING" in
 esac
 
 # A metric is done when its summary.tsv has the header plus one line per direction.
-done_metric() { local f="$OUTPUT_ROOT/$1/$RUN/summary.tsv"; [ -f "$f" ] && [ "$(awk 'END{print NR}' "$f")" -eq 11 ]; }
+done_metric() { local f="$OUTPUTS_DIR/$1/$RUN/summary.tsv"; [ -f "$f" ] && [ "$(awk 'END{print NR}' "$f")" -eq 11 ]; }
 
 echo "##### 1/5 generate $RUN ($(date))"
 bash slurm/generate_quantized.job   # exits non-zero if a direction is incomplete

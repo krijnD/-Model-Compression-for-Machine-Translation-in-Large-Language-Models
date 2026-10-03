@@ -6,9 +6,9 @@
 #SBATCH --time=01:00:00
 #SBATCH --output=logs/slurm-%x-%j.out
 
-# RQ5 in reasearch.md: per-channel activation-energy profiles per language.
+# Per-channel activation-energy profiles per language (paper Section 3.2: are Icelandic activations outlier-heavy?).
 # Measures the fp16 model only - no quantization and no generation, one forward pass per sequence,
-# so this is minutes of GPU, not hours. Writes results/json/channels_fp16.npz, which
+# so this is minutes of GPU, not hours. Writes $OUTPUTS_DIR/channels/channels_fp16.npz, which
 # `--compare` reads back offline.
 #   sbatch slurm/measure_channels.job
 #   sbatch --export=ALL,SUFFIX=mlp.up_proj slurm/measure_channels.job
@@ -20,10 +20,10 @@ VENV=venv
 source slurm/env.sh
 
 python scripts/analysis/measure_channels.py \
-  --model "${MODEL:-$PROJECT_DIR/models/ALMA-13B-R}" \
+  --model "${MODEL:-$MODELS_DIR/ALMA-13B-R}" \
   --suffix "${SUFFIX:-mlp.down_proj}" \
   --profiles "${PROFILES:-mixture,calib:is,calib:de,calib:cs,calib:zh,calib:ru,pool:is:1024,pool:de:1024}" \
   --batch-size "${BATCH:-4}" \
   --dtype "${DTYPE:-bfloat16}" \
   ${LIMIT:+--limit "$LIMIT"} \
-  --out "${OUT:-$REPO_DIR/results/json/channels_fp16.npz}"
+  --out "${OUT:-$OUTPUTS_DIR/channels/channels_fp16.npz}"

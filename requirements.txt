@@ -28,3 +28,9 @@ unbabel-comet==2.2.7
 # --- MetricX-24 (code: third_party/metricx submodule, `python -m metricx24.predict`) ---
 # Its own requirements pin transformers==4.30.2; it also runs on the 4.45.2 above
 # (the MT5 internals it uses are unchanged). No extra packages needed.
+
+# --- Analyses and paper figures (scripts/analysis, scripts/paper; CPU only) ---
+# The paper's figures were drawn with exactly these versions.
+matplotlib==3.9.4
+numpy==1.26.4
+scipy==1.13.1

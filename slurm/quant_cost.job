@@ -8,7 +8,7 @@
 
 # Quantization cost/benefit per checkpoint: peak VRAM, load time, per-line time and throughput
 # at the two eval protocols (de-en 256 @ BATCH=4, zh-en 512 @ BATCH_LONG=1), plus zh-en at
-# BATCH=4 which the fp16 baseline cannot afford (see slurm/generate_alma_r.job:77).
+# BATCH=4 which the fp16 baseline cannot afford (see slurm/generate_alma_r.job).
 # Read-only: does not write to outputs/. Runs on one free H100.
 #   sbatch slurm/quant_cost.job                 # all five checkpoints
 #   TAGS=fp16,w2 sbatch slurm/quant_cost.job    # a subset
@@ -31,8 +31,8 @@ nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv,noheader
 
 for tag in ${TAGS//,/ }; do
   case "$tag" in
-    fp16) model="$PROJECT_DIR/models/ALMA-13B-R" ;;
-    *)    model="$PROJECT_DIR/models/ALMA-13B-R-gptq-${tag}g128" ;;
+    fp16) model="$MODELS_DIR/ALMA-13B-R" ;;
+    *)    model="$MODELS_DIR/ALMA-13B-R-gptq-${tag}g128" ;;
   esac
   [ -d "$model" ] || { echo "missing $model"; exit 1; }
   echo "----- $tag ($model) $(date +%H:%M:%S)"

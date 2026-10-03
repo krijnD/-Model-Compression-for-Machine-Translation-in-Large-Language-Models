@@ -3,12 +3,25 @@
 # Python
 __pycache__/
 *.pyc
+*.egg-info/
 .venv*/
 .env
 
-# Slurm logs and run outputs
+# Slurm logs (the folder itself is kept: Slurm needs it before the job starts)
+logs/*
+!logs/.gitkeep
 slurm-*.out
-outputs/
 
-# francesco/: large activation dumps, reproducible with francesco/analysis/measure_channels.py
-francesco/results/json/*.npz
+# Large files live outside the repository (see mtcompress/paths.py)
+outputs/
+models/
+*.npz
+*.safetensors
+
+# LaTeX build files
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.pdf

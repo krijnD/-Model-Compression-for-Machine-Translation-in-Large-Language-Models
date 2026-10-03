@@ -1,0 +1,284 @@
+{
+  "src": "models/ALMA-13B-R-gptq-w3g128",
+  "bits": 3,
+  "modules_checked": 11,
+  "weights_checked": 511180800,
+  "all_ok": true,
+  "records": [
+    {
+      "module": "model.layers.0.self_attn.q_proj",
+      "in": 5120,
+      "out": 5120,
+      "z_eq_0": 0,
+      "z_max": 6,
+      "q_max": 7,
+      "q_shape": [
+        5120,
+        5120
+      ],
+      "z_shape": [
+        40,
+        5120
+      ],
+      "dequant_mismatch_vs_gptqmodel": 0,
+      "int_q_mismatch": 0,
+      "int_z_mismatch": 0,
+      "unpacker_vs_gptqmodel_mismatch": 0,
+      "scales_g_idx_identical": true,
+      "elements": 26214400,
+      "max_abs_w": 1.4072265625,
+      "ok": true,
+      "disk_equals_memory": true
+    },
+    {
+      "module": "model.layers.0.mlp.down_proj",
+      "in": 13824,
+      "out": 5120,
+      "z_eq_0": 0,
+      "z_max": 6,
+      "q_max": 7,
+      "q_shape": [
+        13824,
+        5120
+      ],
+      "z_shape": [
+        108,
+        5120
+      ],
+      "dequant_mismatch_vs_gptqmodel": 0,
+      "int_q_mismatch": 0,
+      "int_z_mismatch": 0,
+      "unpacker_vs_gptqmodel_mismatch": 0,
+      "scales_g_idx_identical": true,
+      "elements": 70778880,
+      "max_abs_w": 2.599609375,
+      "ok": true,
+      "disk_equals_memory": true
+    },
+    {
+      "module": "model.layers.20.self_attn.q_proj",
+      "in": 5120,
+      "out": 5120,
+      "z_eq_0": 0,
+      "z_max": 6,
+      "q_max": 7,
+      "q_shape": [
+        5120,
+        5120
+      ],
+      "z_shape": [
+        40,
+        5120
+      ],
+      "dequant_mismatch_vs_gptqmodel": 0,
+      "int_q_mismatch": 0,
+      "int_z_mismatch": 0,
+      "unpacker_vs_gptqmodel_mismatch": 0,
+      "scales_g_idx_identical": true,
+      "elements": 26214400,
+      "max_abs_w": 0.422607421875,
+      "ok": true,
+      "disk_equals_memory": true
+    },
+    {
+      "module": "model.layers.20.mlp.down_proj",
+      "in": 13824,
+      "out": 5120,
+      "z_eq_0": 0,
+      "z_max": 6,
+      "q_max": 7,
+      "q_shape": [
+        13824,
+        5120
+      ],
+      "z_shape": [
+        108,
+        5120
+      ],
+      "dequant_mismatch_vs_gptqmodel": 0,
+      "int_q_mismatch": 0,
+      "int_z_mismatch": 0,
+      "unpacker_vs_gptqmodel_mismatch": 0,
+      "scales_g_idx_identical": true,
+      "elements": 70778880,
+      "max_abs_w": 0.91357421875,
+      "ok": true,
+      "disk_equals_memory": true
+    },
+    {
+      "module": "model.layers.39.self_attn.q_proj",
+      "in": 5120,
+      "out": 5120,
+      "z_eq_0": 0,
+      "z_max": 6,
+      "q_max": 7,
+      "q_shape": [
+        5120,
+        5120
+      ],
+      "z_shape": [
+        40,
+        5120
+      ],
+      "dequant_mismatch_vs_gptqmodel": 0,
+      "int_q_mismatch": 0,
+      "int_z_mismatch": 0,
+      "unpacker_vs_gptqmodel_mismatch": 0,
+      "scales_g_idx_identical": true,
+      "elements": 26214400,
+      "max_abs_w": 0.425048828125,
+      "ok": true,
+      "disk_equals_memory": true
+    },
+    {
+      "module": "model.layers.39.mlp.down_proj",
+      "in": 13824,
+      "out": 5120,
+      "z_eq_0": 2,
+      "z_max": 7,
+      "q_max": 7,
+      "q_shape": [
+        13824,
+        5120
+      ],
+      "z_shape": [
+        108,
+        5120
+      ],
+      "dequant_mismatch_vs_gptqmodel": 0,
+      "int_q_mismatch": 0,
+      "int_z_mismatch": 0,
+      "unpacker_vs_gptqmodel_mismatch": 0,
+      "scales_g_idx_identical": true,
+      "elements": 70778880,
+      "max_abs_w": 1.3818359375,
+      "ok": true,
+      "disk_equals_memory": true
+    },
+    {
+      "module": "model.layers.10.self_attn.k_proj",
+      "in": 5120,
+      "out": 5120,
+      "z_eq_0": 0,
+      "z_max": 6,
+      "q_max": 7,
+      "q_shape": [
+        5120,
+        5120
+      ],
+      "z_shape": [
+        40,
+        5120
+      ],
+      "dequant_mismatch_vs_gptqmodel": 0,
+      "int_q_mismatch": 0,
+      "int_z_mismatch": 0,
+      "unpacker_vs_gptqmodel_mismatch": 0,
+      "scales_g_idx_identical": true,
+      "elements": 26214400,
+      "max_abs_w": 0.41455078125,
+      "ok": true,
+      "disk_equals_memory": true
+    },
+    {
+      "module": "model.layers.10.self_attn.v_proj",
+      "in": 5120,
+      "out": 5120,
+      "z_eq_0": 0,
+      "z_max": 6,
+      "q_max": 7,
+      "q_shape": [
+        5120,
+        5120
+      ],
+      "z_shape": [
+        40,
+        5120
+      ],
+      "dequant_mismatch_vs_gptqmodel": 0,
+      "int_q_mismatch": 0,
+      "int_z_mismatch": 0,
+      "unpacker_vs_gptqmodel_mismatch": 0,
+      "scales_g_idx_identical": true,
+      "elements": 26214400,
+      "max_abs_w": 0.222900390625,
+      "ok": true,
+      "disk_equals_memory": true
+    },
+    {
+      "module": "model.layers.10.self_attn.o_proj",
+      "in": 5120,
+      "out": 5120,
+      "z_eq_0": 0,
+      "z_max": 6,
+      "q_max": 7,
+      "q_shape": [
+        5120,
+        5120
+      ],
+      "z_shape": [
+        40,
+        5120
+      ],
+      "dequant_mismatch_vs_gptqmodel": 0,
+      "int_q_mismatch": 0,
+      "int_z_mismatch": 0,
+      "unpacker_vs_gptqmodel_mismatch": 0,
+      "scales_g_idx_identical": true,
+      "elements": 26214400,
+      "max_abs_w": 0.59912109375,
+      "ok": true,
+      "disk_equals_memory": true
+    },
+    {
+      "module": "model.layers.30.mlp.gate_proj",
+      "in": 5120,
+      "out": 13824,
+      "z_eq_0": 0,
+      "z_max": 6,
+      "q_max": 7,
+      "q_shape": [
+        5120,
+        13824
+      ],
+      "z_shape": [
+        40,
+        13824
+      ],
+      "dequant_mismatch_vs_gptqmodel": 0,
+      "int_q_mismatch": 0,
+      "int_z_mismatch": 0,
+      "unpacker_vs_gptqmodel_mismatch": 0,
+      "scales_g_idx_identical": true,
+      "elements": 70778880,
+      "max_abs_w": 0.46240234375,
+      "ok": true,
+      "disk_equals_memory": true
+    },
+    {
+      "module": "model.layers.30.mlp.up_proj",
+      "in": 5120,
+      "out": 13824,
+      "z_eq_0": 0,
+      "z_max": 6,
+      "q_max": 7,
+      "q_shape": [
+        5120,
+        13824
+      ],
+      "z_shape": [
+        40,
+        13824
+      ],
+      "dequant_mismatch_vs_gptqmodel": 0,
+      "int_q_mismatch": 0,
+      "int_z_mismatch": 0,
+      "unpacker_vs_gptqmodel_mismatch": 0,
+      "scales_g_idx_identical": true,
+      "elements": 70778880,
+      "max_abs_w": 0.389892578125,
+      "ok": true,
+      "disk_equals_memory": true
+    }
+  ]
+}

@@ -6,9 +6,9 @@
 #SBATCH --time=01:30:00
 #SBATCH --output=logs/slurm-%x-%j.out
 
-# Peak GPU memory (and time) WITH the distilled adapters, on the same fixed workload as probe16.sbatch
+# Peak GPU memory (and time) WITH the distilled adapters, on the same fixed workload as probe.job
 # (de-en, source 256, beam 5, BATCH=4 and 16, run_probe.py), so the numbers sit next to probe16_<tag>.json.
-#   w3kd   / w2kd   : packed 3-/2-bit checkpoints (Torch / Triton kernel): the real 2/3-bit footprint (fig 13)
+#   w3kd   / w2kd   : packed 3-/2-bit checkpoints (Torch / Triton kernel): the real 2/3-bit footprint (Table 1)
 #   w3as4kd/ w2as4kd: the repacked 4-bit-container copies (ExllamaV2): what the generations actually ran on
 # Adapters are held in fp32, as in generate_lora.py. Output: results/json/probe16_<tag>.json.
 # Peak memory doesn't depend on the GPU model; s/line does, so time is only comparable on the same partition.
@@ -21,7 +21,7 @@ source slurm/env.sh
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
 
-M="$PROJECT_DIR/models"; S="$ARTIFACTS_DIR"
+M="$MODELS_DIR"; S="$ARTIFACTS_DIR"
 A3="$S/ALMA-13B-R-gptq-w3g128-kd-lora"; A2="$S/ALMA-13B-R-gptq-w2g128-kd-lora-r64-cont"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 for spec in "w3kd:$M/ALMA-13B-R-gptq-w3g128:$A3" "w2kd:$M/ALMA-13B-R-gptq-w2g128:$A2" \

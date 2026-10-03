@@ -11,7 +11,7 @@
 # 2 bits and Torch for 3 - all three of which dequantize the whole matrix to bf16 and THEN matmul, so
 # they move more bytes per forward than fp16 does. Marlin supports 4 AND 8 bits with desc_act, so if
 # it loads, 8-bit may be the one precision where the compression is also a speed win.
-# Same fixed workload as cost.sbatch (de-en, source 256, beam 5, first four sentences, BATCH=4 and
+# Same fixed workload as quant_cost.job (de-en, source 256, beam 5, first four sentences, BATCH=4 and
 # the zh-en 512 @BATCH=4 shape), one process per (checkpoint, kernel), written to
 # results/json/backend_<tag>_<backend>.json so the quant_cost_*.json records are untouched.
 #   sbatch slurm/backends.job
@@ -36,8 +36,8 @@ for combo in $COMBOS; do
   for be in ${backends//,/ }; do
     be="${be%,}"
     case "$tag" in
-      fp16) model="$PROJECT_DIR/models/ALMA-13B-R" ;;
-      *)    model="$PROJECT_DIR/models/ALMA-13B-R-gptq-${tag}g128" ;;
+      fp16) model="$MODELS_DIR/ALMA-13B-R" ;;
+      *)    model="$MODELS_DIR/ALMA-13B-R-gptq-${tag}g128" ;;
     esac
     echo "----- $tag / $be ($(date +%H:%M:%S))"
     python scripts/analysis/measure_quant_cost.py \

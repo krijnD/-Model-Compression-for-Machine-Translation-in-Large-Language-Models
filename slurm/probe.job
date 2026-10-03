@@ -6,10 +6,9 @@
 #SBATCH --time=01:00:00
 #SBATCH --output=logs/slurm-%x-%j.out
 
-# Same fixed workload as the cost probe (de-en, source 256, beam 5) at BATCH=4 and BATCH=16 for
-# every checkpoint: does raising the batch close the gap that weight-only GPTQ opens against fp16?
-# Uses run_probe.py (the batch-size study), one process per checkpoint, writing probe16_<tag>.json
-# so the original probe_<model>.json files are left alone. Read-only, one free H100.
+# Peak GPU memory and time per sentence (paper Table 1, Figure 3): a fixed workload (de-en, source 256,
+# beam 5) at BATCH=4 and BATCH=16 for every checkpoint, one process each -> results/json/probe16_<tag>.json.
+# The batch-1 column of Table 1 is TAGS=... BATCHES=1 SUFFIX=_b1. Read-only, one free H100.
 #   sbatch slurm/probe.job
 #   TAGS=fp16:w8 BATCHES=1 SUFFIX=_b1 ... : other batch sizes, written to probe16_<tag><SUFFIX>.json
 #   (always set SUFFIX with other BATCHES, or the batch-4/16 files are overwritten)
@@ -25,8 +24,8 @@ echo "##### batch-16 probe tags=$LIST ($(date))"
 nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv,noheader
 for tag in ${LIST//,/ }; do
   case "$tag" in
-    fp16) model="$PROJECT_DIR/models/ALMA-13B-R" ;;
-    *)    model="$PROJECT_DIR/models/ALMA-13B-R-gptq-${tag}g128" ;;
+    fp16) model="$MODELS_DIR/ALMA-13B-R" ;;
+    *)    model="$MODELS_DIR/ALMA-13B-R-gptq-${tag}g128" ;;
   esac
   [ -d "$model" ] || { echo "missing $model"; exit 1; }
   echo "----- $tag $(date +%H:%M:%S)"

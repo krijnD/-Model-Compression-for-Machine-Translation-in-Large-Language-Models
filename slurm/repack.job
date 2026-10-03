@@ -12,7 +12,7 @@
 # step re-verifies on the written files) but load as bits=4, so GPTQModel can give them
 # the fused ExllamaV2QuantLinear instead of TorchQuantLinear (w3) / TritonV2QuantLinear (w2).
 #   1. convert, if the repacked folder is missing (CPU, a few minutes each; verifies on the files)
-#   2. timing: the backends.sbatch fixed workload (de-en 256 @BATCH=4 + zh-en 512 @4) and de-en
+#   2. timing: the backends.job fixed workload (de-en 256 @BATCH=4 + zh-en 512 @4) and de-en
 #      256 @BATCH=16, for each repacked checkpoint and kernel -> results/json/backend_<tag>_<be>[_b16].json,
 #      directly comparable to backend_w3_torch.json / backend_w2_torch.json / backend_w4_exllama_v2.json
 #   3. quality drift: the first $LINES lines of de-en and en-is with the repacked w3 (ExLlamaV2) and,
@@ -34,11 +34,11 @@ COMBOS="${COMBOS:-w3as4:auto,exllama_v2 w2as4:auto,exllama_v2}"
 REPS="${REPS:-3}"
 LINES="${LINES:-200}"
 JSON="$REPO_DIR/results/json"
-CHECK="$OUTPUT_ROOT/repack-check"
+CHECK="$OUTPUTS_DIR/repack-check"
 model_of() {  # w3as4 -> repacked folder, w3 -> original
   case "$1" in
     w?as4) echo "$REPACK_ROOT/ALMA-13B-R-gptq-${1%as4}g128-as-w4" ;;
-    *)     echo "$PROJECT_DIR/models/ALMA-13B-R-gptq-${1}g128" ;;
+    *)     echo "$MODELS_DIR/ALMA-13B-R-gptq-${1}g128" ;;
   esac
 }
 
@@ -70,9 +70,7 @@ if [[ ",$STEPS," == *",time,"* ]]; then
         --out "$JSON/backend_${tag}_${be}.json" \
         || echo "##### $tag/$be FAILED"
     done
-    # BATCH=4 vs 16 exactly as probe16.sbatch measured the existing rows (run_probe.py, auto kernel,
-    # probe16_<tag>.json). Not measure_quant_cost.py: a backend_*_b16.json would share its
-    # (tag, backend) key with the BATCH=4 record in make_report.load_backends() and overwrite it.
+    # BATCH=4 vs 16 exactly as probe.job measured the other rows (run_probe.py, auto kernel, probe16_<tag>.json).
     echo "----- $tag, BATCH=4 vs 16 probe ($(date +%H:%M:%S))"
     python scripts/analysis/run_probe.py --model "$model" --pair de-en \
       --batches 4,16 --reps "$REPS" --max-source-length 256 \
@@ -96,12 +94,12 @@ if [[ ",$STEPS," == *",quality,"* ]]; then
   done
   source "$PROJECT_DIR/venv/bin/activate"        # sacrebleu lives in the scoring venv
   for tag in w3as4_auto w3_torch; do
-    python scripts/analysis/compare_outputs.py --a "$OUTPUT_ROOT/gptq-w3g128/wmt22" \
+    python scripts/analysis/compare_outputs.py --a "$OUTPUTS_DIR/gptq-w3g128/wmt22" \
       --b "$CHECK/$tag" --labels grid,"$tag" --pairs de-en,en-is --lines "$LINES" \
       --out "$JSON/repack_quality_${tag}.json" || true
   done
   # the grid's own w4 as the scale: how different is "a different model" on the same lines
-  python scripts/analysis/compare_outputs.py --a "$OUTPUT_ROOT/gptq-w3g128/wmt22" \
-    --b "$OUTPUT_ROOT/gptq-w4g128/wmt22" --labels grid,w4 --pairs de-en,en-is --lines "$LINES" || true
+  python scripts/analysis/compare_outputs.py --a "$OUTPUTS_DIR/gptq-w3g128/wmt22" \
+    --b "$OUTPUTS_DIR/gptq-w4g128/wmt22" --labels grid,w4 --pairs de-en,en-is --lines "$LINES" || true
 fi
 echo "##### done ($(date))"

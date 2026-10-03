@@ -1,9 +1,16 @@
 # Shared setup for the Snellius jobs. Submit jobs from the repo root:
-#   sbatch scripts/snellius/<job>.job
-# Expected layout: <project dir>/{Model-Compression-MT (this repo), venv, hf_cache, outputs}
+#   sbatch slurm/<job>.job
+# Expected layout (README): <project dir>/{<this repo>, venv, venv-quant, hf_cache, models, outputs}
+# Every folder below can be overridden from the environment; mtcompress/paths.py reads the same variables.
+# Example: sbatch --export=ALL,ARTIFACTS_DIR=/scratch-shared/$USER/models slurm/distill.job
 
 REPO_DIR="${SLURM_SUBMIT_DIR:-$(pwd)}"
-PROJECT_DIR="$(dirname "$REPO_DIR")"
+export PROJECT_DIR="${PROJECT_DIR:-$(dirname "$REPO_DIR")}"
+export MODELS_DIR="${MODELS_DIR:-$MODELS_DIR}"        # fp16 ALMA-13B-R and the GPTQ checkpoints
+export ARTIFACTS_DIR="${ARTIFACTS_DIR:-$MODELS_DIR}"          # adapters, repacked checkpoints, LID model
+export OUTPUTS_DIR="${OUTPUTS_DIR:-$PROJECT_DIR/outputs}"     # translations and segment-level scores
+export PYTHONPATH="$REPO_DIR${PYTHONPATH:+:$PYTHONPATH}"      # makes mtcompress importable without pip install
+mkdir -p "$REPO_DIR/logs"
 
 module purge
 module load 2024
@@ -15,7 +22,6 @@ export HF_HOME="${HF_HOME:-$PROJECT_DIR/hf_cache}"
 # If compute nodes have no internet, pre-download models on the login node and uncomment:
 # export HF_HUB_OFFLINE=1
 
-OUTPUT_ROOT="$PROJECT_DIR/outputs"
 WMT22_PAIRS="de-en,cs-en,is-en,zh-en,ru-en,en-de,en-cs,en-is,en-zh,en-ru"
 
 # Which translations to score (same mapping in scripts/reproduce/score_lexical.py):
@@ -29,10 +35,10 @@ hyp_path() {
   local s=${1%-*} t=${1#*-}
   case "$RUN" in
     paper)     echo "$REPO_DIR/third_party/ALMA/outputs/wmt22_outputs/ALMA-13B-R/$s$t/test.$s-$t.$t" ;;
-    ours)      echo "$OUTPUT_ROOT/alma-13b-r/wmt22/test-$s-$t" ;;
-    ours-beam) echo "$OUTPUT_ROOT/alma-13b-r-beam/wmt22/test-$s-$t" ;;
-    *)         [ -d "$OUTPUT_ROOT/$RUN/wmt22" ] || { echo "ERROR: unknown RUN=$RUN (no $OUTPUT_ROOT/$RUN/wmt22)" >&2; return 1; }
-               echo "$OUTPUT_ROOT/$RUN/wmt22/test-$s-$t" ;;
+    ours)      echo "$OUTPUTS_DIR/alma-13b-r/wmt22/test-$s-$t" ;;
+    ours-beam) echo "$OUTPUTS_DIR/alma-13b-r-beam/wmt22/test-$s-$t" ;;
+    *)         [ -d "$OUTPUTS_DIR/$RUN/wmt22" ] || { echo "ERROR: unknown RUN=$RUN (no $OUTPUTS_DIR/$RUN/wmt22)" >&2; return 1; }
+               echo "$OUTPUTS_DIR/$RUN/wmt22/test-$s-$t" ;;
   esac
 }
 

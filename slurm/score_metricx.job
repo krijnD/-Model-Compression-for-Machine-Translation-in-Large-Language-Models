@@ -12,7 +12,7 @@
 set -euo pipefail
 source slurm/env.sh
 
-RESULTS="$OUTPUT_ROOT/metricx-24/$RUN"
+RESULTS="$OUTPUTS_DIR/metricx-24/$RUN"
 mkdir -p "$RESULTS"
 SUMMARY="$RESULTS/summary.tsv"
 echo -e "pair\tmetricx-24" > "$SUMMARY"

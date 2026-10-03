@@ -6,17 +6,22 @@
 #SBATCH --time=04:00:00
 #SBATCH --output=logs/slurm-%x-%j.out
 
-# Distil fp16 ALMA-13B-R into a LoRA on the frozen w3 checkpoint (francesco/docs/06-distillation.md).
-# Submit from the repo root. Run the smoke test first:
+# Distil fp16 ALMA-13B-R into a LoRA on a frozen GPTQ checkpoint (paper Section 2.3, Appendix B).
+# The three runs in the paper (their configs and training logs are in results/distill_runs/):
+#   w3, rank 16, 30K examples:
+#     sbatch slurm/distill.job
+#   w2, rank 64, 30K examples, then 60K more from that adapter with a fresh schedule (the w2+KD adapter):
+#     sbatch --export=ALL,BITS=2,ADAPTER=$ARTIFACTS_DIR/ALMA-13B-R-gptq-w2g128-kd-lora-r64,EXTRA="--r 64 --alpha 128" slurm/distill.job
+#     sbatch --export=ALL,BITS=2,ADAPTER=$ARTIFACTS_DIR/ALMA-13B-R-gptq-w2g128-kd-lora-r64-cont,EXTRA="--r 64 --alpha 128 --n-examples 60000 --init-adapter $ARTIFACTS_DIR/ALMA-13B-R-gptq-w2g128-kd-lora-r64" slurm/distill.job
+# Run the smoke test first:
 #   sbatch --export=ALL,SMOKE=1 slurm/distill.job   # ~20 min: 30 steps + 8-line generation
 #   sbatch slurm/distill.job                        # full run (~30k examples, 1 epoch)
 # SMOKE=1 checks: gradients reach every adapter through TorchQuantLinear ("grad_check" line), loss finite,
 # peak memory, s/step and "eta_min" (the full-run time, measured), and that the saved adapter loads on the
 # repacked w3 (ExllamaV2) and generates.
 #   BITS=3          : student checkpoint models/ALMA-13B-R-gptq-w${BITS}g128 (default 3); the smoke generation
-#                     uses its repacked 4-bit-container copy (docs/04-kernel-repack.md)
+#                     uses its repacked 4-bit-container copy (slurm/repack.job)
 #   ADAPTER=<dir>   : output folder (default $ARTIFACTS_DIR/ALMA-13B-R-gptq-w${BITS}g128-kd-lora)
-#   w2, rank 64:  sbatch --export=ALL,BITS=2,ADAPTER=$ARTIFACTS_DIR/ALMA-13B-R-gptq-w2g128-kd-lora-r64,EXTRA="--r 64 --alpha 128" slurm/distill.job
 #   EXTRA="..."     : more distill_lora.py flags, e.g. EXTRA="--kd-weight 0 --ce-weight 1" (SFT variant)
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
@@ -26,9 +31,9 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
 
 MODELS_SCRATCH="$ARTIFACTS_DIR"
-TEACHER="$PROJECT_DIR/models/ALMA-13B-R"
+TEACHER="$MODELS_DIR/ALMA-13B-R"
 BITS="${BITS:-3}"
-STUDENT="$PROJECT_DIR/models/ALMA-13B-R-gptq-w${BITS}g128"
+STUDENT="$MODELS_DIR/ALMA-13B-R-gptq-w${BITS}g128"
 W3AS4="$MODELS_SCRATCH/ALMA-13B-R-gptq-w${BITS}g128-as-w4"   # repacked copy, for the smoke generation
 if [ "${SMOKE:-0}" = 1 ]; then
   ADAPTER="${ADAPTER:-$MODELS_SCRATCH/ALMA-13B-R-gptq-w${BITS}g128-kd-lora-smoke}"

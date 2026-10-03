@@ -22,11 +22,11 @@ VENV=venv-quant
 source slurm/env.sh
 
 QUANT="${QUANT:?set QUANT, e.g. QUANT=gptq-w4g128}"
-MODEL="${MODEL:-$PROJECT_DIR/models/ALMA-13B-R-$QUANT}"
+MODEL="${MODEL:-$MODELS_DIR/ALMA-13B-R-$QUANT}"
 DECODING="${DECODING:-beam}"
 case "$DECODING" in
-  beam)  OUT="${OUT:-$OUTPUT_ROOT/$QUANT/wmt22}" ;;
-  paper) OUT="${OUT:-$OUTPUT_ROOT/$QUANT-paper/wmt22}" ;;
+  beam)  OUT="${OUT:-$OUTPUTS_DIR/$QUANT/wmt22}" ;;
+  paper) OUT="${OUT:-$OUTPUTS_DIR/$QUANT-paper/wmt22}" ;;
   *) echo "ERROR: DECODING must be beam or paper"; exit 1 ;;
 esac
 [ -f "$MODEL/quantize_config.json" ] || { echo "ERROR: $MODEL is not a quantized model folder"; exit 1; }

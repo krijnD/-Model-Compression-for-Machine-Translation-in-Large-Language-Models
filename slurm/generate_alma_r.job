@@ -17,12 +17,12 @@ source slurm/env.sh
 
 # Local copy of the merged weights WITHOUT the adapter files (see README):
 # loading "haoranxu/ALMA-13B-R" by name makes transformers load ALMA-13B-Pretrain + adapter instead.
-MODEL="${MODEL:-$PROJECT_DIR/models/ALMA-13B-R}"
+MODEL="${MODEL:-$MODELS_DIR/ALMA-13B-R}"
 [ -f "$MODEL/adapter_config.json" ] && { echo "ERROR: $MODEL contains adapter_config.json; remove adapter_* files"; exit 1; }
 DECODING="${DECODING:-paper}"
 case "$DECODING" in
-  paper) OUT="${OUT:-$OUTPUT_ROOT/alma-13b-r/wmt22}" ;;
-  beam)  OUT="${OUT:-$OUTPUT_ROOT/alma-13b-r-beam/wmt22}"
+  paper) OUT="${OUT:-$OUTPUTS_DIR/alma-13b-r/wmt22}" ;;
+  beam)  OUT="${OUT:-$OUTPUTS_DIR/alma-13b-r-beam/wmt22}"
          # run_llmmt.py has no do_sample flag and generate() falls back to the model's
          # generation_config, so point it at a copy of the model folder (symlinks) whose
          # generation_config has sampling switched off.
