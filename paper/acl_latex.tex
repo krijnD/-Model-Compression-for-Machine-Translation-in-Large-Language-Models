@@ -52,6 +52,9 @@
   \setlength{\belowdisplayshortskip}{2pt plus 1pt}}
 \makeatother
 \raggedbottom  % no stretched gaps between paragraphs to fill each column
+\makeatletter
+\g@addto@macro\UrlBreaks{\do\-}  % long URLs may break after a hyphen
+\makeatother
 
 % If the title and author information does not fit in the area allocated, uncomment the following
 %
@@ -308,8 +311,8 @@ detected with the NLLB language identifier \citep{nllb2022,joulin2017bag};
 \toprule
  & \multicolumn{3}{c}{Memory (GiB)} & Time & \multicolumn{3}{c}{Quality} \\
 \cmidrule(lr){2-4}\cmidrule(lr){5-5}\cmidrule(lr){6-8}
- & & \multicolumn{2}{c}{Peak} & s/ & & & \\
-Model & Disk & $b{=}1$ & $b{=}4$ & sent. & BLEU & XCOMET & MetricX \\
+ & & \multicolumn{2}{c}{Peak} & s/sent. & & & \\
+Model & Disk & $b{=}1$ & $b{=}4$ &  & BLEU & XCOMET & MetricX \\
 \midrule
 fp16 & 24.2 & 25.4 & 28.8 & 0.36 & 31.4 & 92.1 & 2.38 \\
 w8   & 12.7 & 13.9 & 17.2 & 0.60 & 31.4 & 92.1 & 2.38 \\
@@ -569,6 +572,17 @@ mitigate with the independent MetricX-24 but do not remove. Finally, memory was
 measured on a data-centre GPU; the 8\,GB claim assumes a recent NVIDIA GPU with
 bf16 support and has not been tested on consumer hardware. Older GPUs could in
 principle run the model in fp16 or fp32, at a much lower speed.
+
+\section*{Code Availability}
+
+Our code is available under the MIT licence at
+\url{https://github.com/krijnD/-Model-Compression-for-Machine-Translation-in-Large-Language-Models/tree/francesco/refactor-public}.
+It covers the full pipeline: the reproduction of ALMA-13B-R, GPTQ quantization,
+adapter distillation, evaluation and all analyses, with the exact command of
+every run reported here. The repository also contains the scores and
+measurements behind every result, and the scripts that rebuild all figures and
+tables of this paper from them. The quantized checkpoints and the distilled
+adapters can be rebuilt with these scripts.
 
 % Bibliography entries for the entire Anthology, followed by custom entries
 %\bibliography{custom,anthology-overleaf-1,anthology-overleaf-2}
