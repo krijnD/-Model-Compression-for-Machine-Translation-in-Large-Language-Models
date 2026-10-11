@@ -309,6 +309,7 @@ With `venv` active (`pip install -e .` done, or `export PYTHONPATH=$PWD`), after
 | Command | Output | Paper |
 |---|---|---|
 | `python scripts/analysis/score_failures.py` | `results/json/failures.json` | Table 2, Section 3.4 |
+| `python scripts/analysis/failure_significance.py --wmt24pp <WMT24++ test set>` | `results/json/failure_significance.json` | Bold cells of Tables 2, 7 and 9, Tables 7 and 9, Sections 3.5 and D |
 | `python scripts/analysis/bootstrap_ci.py` | `results/json/bootstrap_ci.json` | Section 3.3, Appendix A |
 | `python scripts/analysis/audit_recovery.py` | `results/json/audit_*.json` | Section 3.4, Appendix D |
 | `python scripts/analysis/fragility_by_confidence.py` | `results/json/fragility_by_confidence.json` | Section 3.2 |

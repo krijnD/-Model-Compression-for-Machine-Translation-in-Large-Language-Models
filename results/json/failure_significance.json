@@ -1,0 +1,474 @@
+{
+ "wmt22": {
+  "ours-beam": {
+   "de-en": {
+    "any": 0.4536290322580645,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "cs-en": {
+    "any": 0.5524861878453039,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "is-en": {
+    "any": 0.2,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "zh-en": {
+    "any": 3.0933333333333333,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "ru-en": {
+    "any": 1.6865079365079365,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "en-de": {
+    "any": 0.5400098183603338,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "en-cs": {
+    "any": 1.2763868433971526,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "en-is": {
+    "any": 0.1,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "en-zh": {
+    "any": 1.2763868433971526,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "en-ru": {
+    "any": 1.7182130584192439,
+    "p_mcnemar": 1.0,
+    "worse": false
+   }
+  },
+  "gptq-w3g128": {
+   "de-en": {
+    "any": 0.7056451612903226,
+    "p_mcnemar": 0.2265625,
+    "worse": false
+   },
+   "cs-en": {
+    "any": 0.7596685082872928,
+    "p_mcnemar": 0.548828125,
+    "worse": false
+   },
+   "is-en": {
+    "any": 3.5,
+    "p_mcnemar": 2.0954757928848267e-09,
+    "worse": true
+   },
+   "zh-en": {
+    "any": 6.826666666666667,
+    "p_mcnemar": 8.443958194827311e-11,
+    "worse": true
+   },
+   "ru-en": {
+    "any": 2.0833333333333335,
+    "p_mcnemar": 0.13380050659179688,
+    "worse": false
+   },
+   "en-de": {
+    "any": 0.49091801669121254,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "en-cs": {
+    "any": 3.1418753068237604,
+    "p_mcnemar": 1.2143807700186297e-06,
+    "worse": true
+   },
+   "en-is": {
+    "any": 14.7,
+    "p_mcnemar": 2.2420775429197073e-44,
+    "worse": true
+   },
+   "en-zh": {
+    "any": 7.02012763868434,
+    "p_mcnemar": 8.681051190896228e-29,
+    "worse": true
+   },
+   "en-ru": {
+    "any": 3.289150711831124,
+    "p_mcnemar": 0.0004515172719148108,
+    "worse": true
+   }
+  },
+  "gptq-w2g128": {
+   "de-en": {
+    "any": 97.37903225806451,
+    "p_mcnemar": 0.0,
+    "worse": true
+   },
+   "cs-en": {
+    "any": 99.58563535911603,
+    "p_mcnemar": 0.0,
+    "worse": true
+   },
+   "is-en": {
+    "any": 100.0,
+    "p_mcnemar": 7.466108948025751e-301,
+    "worse": true
+   },
+   "zh-en": {
+    "any": 97.38666666666667,
+    "p_mcnemar": 0.0,
+    "worse": true
+   },
+   "ru-en": {
+    "any": 99.95039682539682,
+    "p_mcnemar": 0.0,
+    "worse": true
+   },
+   "en-de": {
+    "any": 99.95090819833088,
+    "p_mcnemar": 0.0,
+    "worse": true
+   },
+   "en-cs": {
+    "any": 99.80363279332352,
+    "p_mcnemar": 0.0,
+    "worse": true
+   },
+   "en-is": {
+    "any": 100.0,
+    "p_mcnemar": 3.7330544740128755e-301,
+    "worse": true
+   },
+   "en-zh": {
+    "any": 100.0,
+    "p_mcnemar": 0.0,
+    "worse": true
+   },
+   "en-ru": {
+    "any": 100.0,
+    "p_mcnemar": 0.0,
+    "worse": true
+   }
+  },
+  "gptq-w3g128-as4-kd": {
+   "de-en": {
+    "any": 0.4536290322580645,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "cs-en": {
+    "any": 0.48342541436464087,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "is-en": {
+    "any": 0.3,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "zh-en": {
+    "any": 2.986666666666667,
+    "p_mcnemar": 0.8505540192127228,
+    "worse": false
+   },
+   "ru-en": {
+    "any": 1.7361111111111112,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "en-de": {
+    "any": 0.4418262150220913,
+    "p_mcnemar": 0.5,
+    "worse": false
+   },
+   "en-cs": {
+    "any": 1.1782032400589102,
+    "p_mcnemar": 0.6875,
+    "worse": false
+   },
+   "en-is": {
+    "any": 0.1,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "en-zh": {
+    "any": 1.4727540500736378,
+    "p_mcnemar": 0.5234670639038086,
+    "worse": false
+   },
+   "en-ru": {
+    "any": 1.2272950417280315,
+    "p_mcnemar": 0.0308837890625,
+    "worse": false
+   }
+  },
+  "gptq-w2g128-as4-kd-r64-cont": {
+   "de-en": {
+    "any": 0.4536290322580645,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "cs-en": {
+    "any": 0.5524861878453039,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "is-en": {
+    "any": 0.2,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "zh-en": {
+    "any": 3.3066666666666666,
+    "p_mcnemar": 0.6888797607233395,
+    "worse": false
+   },
+   "ru-en": {
+    "any": 1.6865079365079365,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "en-de": {
+    "any": 2.4054982817869415,
+    "p_mcnemar": 1.3680484300948594e-08,
+    "worse": true
+   },
+   "en-cs": {
+    "any": 1.4727540500736378,
+    "p_mcnemar": 0.5846647117286922,
+    "worse": false
+   },
+   "en-is": {
+    "any": 1.2,
+    "p_mcnemar": 0.00341796875,
+    "worse": true
+   },
+   "en-zh": {
+    "any": 4.172803141875307,
+    "p_mcnemar": 2.394644905698785e-11,
+    "worse": true
+   },
+   "en-ru": {
+    "any": 1.914580265095729,
+    "p_mcnemar": 0.6271025701571489,
+    "worse": false
+   }
+  },
+  "gptq-w2g128-as4-sft-r64-cont": {
+   "de-en": {
+    "any": 0.8064516129032258,
+    "p_mcnemar": 0.11846923828124999,
+    "worse": false
+   },
+   "cs-en": {
+    "any": 1.0359116022099448,
+    "p_mcnemar": 0.0654296875,
+    "worse": false
+   },
+   "is-en": {
+    "any": 0.5,
+    "p_mcnemar": 0.375,
+    "worse": false
+   },
+   "zh-en": {
+    "any": 5.386666666666667,
+    "p_mcnemar": 2.2369582656172593e-05,
+    "worse": true
+   },
+   "ru-en": {
+    "any": 2.0337301587301586,
+    "p_mcnemar": 0.2295229434967041,
+    "worse": false
+   },
+   "en-de": {
+    "any": 2.7982326951399115,
+    "p_mcnemar": 3.1581898207733166e-10,
+    "worse": true
+   },
+   "en-cs": {
+    "any": 1.4727540500736378,
+    "p_mcnemar": 0.6075913612730801,
+    "worse": false
+   },
+   "en-is": {
+    "any": 0.6,
+    "p_mcnemar": 0.125,
+    "worse": false
+   },
+   "en-zh": {
+    "any": 4.221894943544428,
+    "p_mcnemar": 3.161290522649495e-12,
+    "worse": true
+   },
+   "en-ru": {
+    "any": 1.5709376534118802,
+    "p_mcnemar": 0.7428293587290682,
+    "worse": false
+   }
+  }
+ },
+ "wmt24pp": {
+  "ood24-fp16": {
+   "de-en": {
+    "any": 3.3333333333333335,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "cs-en": {
+    "any": 2.8125,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "is-en": {
+    "any": 3.4375,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "zh-en": {
+    "any": 2.3958333333333335,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "ru-en": {
+    "any": 3.5416666666666665,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "en-de": {
+    "any": 3.125,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "en-cs": {
+    "any": 3.4375,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "en-is": {
+    "any": 3.5416666666666665,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "en-zh": {
+    "any": 7.708333333333333,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "en-ru": {
+    "any": 3.4375,
+    "p_mcnemar": 1.0,
+    "worse": false
+   }
+  },
+  "ood24-w2": {
+   "de-en": {
+    "any": 98.22916666666667,
+    "p_mcnemar": 2.6399162552647268e-272,
+    "worse": true
+   },
+   "cs-en": {
+    "any": 99.6875,
+    "p_mcnemar": 5.139911964971576e-278,
+    "worse": true
+   },
+   "is-en": {
+    "any": 99.58333333333333,
+    "p_mcnemar": 6.529726531448563e-276,
+    "worse": true
+   },
+   "zh-en": {
+    "any": 98.22916666666667,
+    "p_mcnemar": 4.665930398518574e-271,
+    "worse": true
+   },
+   "ru-en": {
+    "any": 99.0625,
+    "p_mcnemar": 4.790331490584007e-272,
+    "worse": true
+   },
+   "en-de": {
+    "any": 99.89583333333333,
+    "p_mcnemar": 4.407212831701244e-280,
+    "worse": true
+   },
+   "en-cs": {
+    "any": 99.89583333333333,
+    "p_mcnemar": 3.5257702653609953e-279,
+    "worse": true
+   },
+   "en-is": {
+    "any": 100.0,
+    "p_mcnemar": 3.5257702653609953e-279,
+    "worse": true
+   },
+   "en-zh": {
+    "any": 100.0,
+    "p_mcnemar": 3.8766254036312874e-267,
+    "worse": true
+   },
+   "en-ru": {
+    "any": 100.0,
+    "p_mcnemar": 1.7628851326804976e-279,
+    "worse": true
+   }
+  },
+  "ood24-w2kd": {
+   "de-en": {
+    "any": 3.125,
+    "p_mcnemar": 0.79052734375,
+    "worse": false
+   },
+   "cs-en": {
+    "any": 3.2291666666666665,
+    "p_mcnemar": 0.3876953125,
+    "worse": false
+   },
+   "is-en": {
+    "any": 3.125,
+    "p_mcnemar": 0.6776394844055176,
+    "worse": false
+   },
+   "zh-en": {
+    "any": 2.5,
+    "p_mcnemar": 1.0,
+    "worse": false
+   },
+   "ru-en": {
+    "any": 3.9583333333333335,
+    "p_mcnemar": 0.4239501953125,
+    "worse": false
+   },
+   "en-de": {
+    "any": 3.6458333333333335,
+    "p_mcnemar": 0.48685024166479707,
+    "worse": false
+   },
+   "en-cs": {
+    "any": 5.208333333333333,
+    "p_mcnemar": 0.018623836615006432,
+    "worse": true
+   },
+   "en-is": {
+    "any": 9.479166666666666,
+    "p_mcnemar": 1.3333193226298718e-10,
+    "worse": true
+   },
+   "en-zh": {
+    "any": 14.6875,
+    "p_mcnemar": 3.365762747550114e-10,
+    "worse": true
+   },
+   "en-ru": {
+    "any": 5.729166666666667,
+    "p_mcnemar": 0.0012600338162656044,
+    "worse": true
+   }
+  }
+ }
+}
