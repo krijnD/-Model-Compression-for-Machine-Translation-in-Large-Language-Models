@@ -3,9 +3,11 @@
 Code, results and paper source for *Low-Bit Quantization for Multilingual Machine Translation*
 (Krijn Dignum, Francesco Massafra, Matthijs Vork, Max Wilde, Reinout Wolting; University of Amsterdam).
 
-We quantize [ALMA-13B-R](https://huggingface.co/haoranxu/ALMA-13B-R) with GPTQ to 8, 4, 3 and 2 bits and evaluate it
-on the ten WMT'22 directions of the ALMA-R paper (WMT'21 for Icelandic) with seven metrics. Keeping the quantizer
-fixed, we then distil the full-precision model into a small LoRA adapter on the 3-bit and 2-bit models.
+We test how much we can shrink [ALMA-13B-R](https://huggingface.co/haoranxu/ALMA-13B-R) while keeping its
+translation quality. We use GPTQ to store the model's weights with fewer bits, then measure translation quality
+in ten language directions using the ALMA-R paper's test sets (WMT'22, or WMT'21 for Icelandic).
+For the 3-bit and 2-bit models, we also train a small add-on, called a LoRA adapter, to learn from the original
+model and recover translation quality.
 
 | Model | Disk (GiB) | Peak GPU, batch 1 (GiB) | BLEU | XCOMET-XXL | MetricX-24 ↓ |
 |---|---:|---:|---:|---:|---:|
@@ -16,16 +18,26 @@ fixed, we then distil the full-precision model into a small LoRA adapter on the 
 | **w3 + distilled adapter** (r = 16) | 5.4 | 6.9 | 31.1 | 91.9 | 2.43 |
 | **w2 + distilled adapter** (r = 64) | 4.2 | 5.5 | 27.8 | 88.1 | 3.16 |
 
-Averages over the ten directions; adapters counted in bf16. Full results: paper Table 1 and Appendix A.
+Averages over the ten language directions. `fp16` is the original 16-bit model; `w4`, `w3` and `w2` store weights
+with 4, 3 and 2 bits. Adapter sizes are counted using 16-bit values (bf16); `r` controls the adapter's size.
+Higher BLEU and XCOMET-XXL scores are better; lower MetricX-24 scores are better.
+Full results: paper Table 1 and Appendix A.
 
-- Down to 4 bits, quantization is nearly free. Below that, quality collapses unevenly: Icelandic first.
-- The 3-bit model keeps its knowledge of Icelandic but loses the Icelandic–English mapping (teacher-forced NLL).
-- A distilled adapter restores the 3-bit model to full-precision quality, and turns the collapsed 2-bit model into
+- The 4-bit model uses much less memory with little loss of translation quality. Below that, quality drops
+  unevenly across languages, with Icelandic particularly affected.
+- Tests using reference translations suggest that the 3-bit model retains knowledge of Icelandic but struggles
+  to translate between Icelandic and English.
+- An adapter trained using the original model brings the 3-bit model close to the original translation quality,
+  and turns the collapsed 2-bit model into
   a usable translator that fits an 8 GB GPU.
+
+To redraw the paper's figures from the saved results, follow the short setup below. To run the translation and
+training experiments yourself, use the full reproduction instructions; those require an NVIDIA GPU cluster.
 
 ## Contents
 
 - [Repository layout](#repository-layout)
+- [Updating an existing checkout](#updating-an-existing-checkout)
 - [Rebuild the paper's figures and tables (CPU, one minute)](#rebuild-the-papers-figures-and-tables)
 - [Full reproduction](#full-reproduction): [setup](#1-get-the-code), then steps [A](#a-full-precision-baseline-section-21)–[I](#i-rebuild-and-check-the-paper)
 - [Notes](#notes), [Licence](#licence), [Citation](#citation)
@@ -37,13 +49,13 @@ mtcompress/        shared code: paths.py (all folders), alma_prompt.py (ALMA's p
 scripts/
   reproduce/       score_lexical.py (BLEU, chrF++), summarize.py (one score table per run)
   quantize/        quantize_gptq.py, generate_quantized.py, repack_to_w4.py (lossless 3/2-bit -> 4-bit layout)
-  distill/         distill_lora.py (KL distillation into a LoRA), generate_lora.py
-  analysis/        NLL, memory and latency probes, failure modes, bootstrap CIs, sanity checks, weight analyses
+  distill/         train adapters using the original model, then translate with them
+  analysis/        translation failures, memory, speed, uncertainty and model-weight measurements
   paper/           every figure and table of the paper, built from results/
 slurm/             one job per step (Snellius, H100); env.sh sets all paths
 results/
-  scores/          corpus-level scores of every model on every metric and direction
-  json/            NLL, probes, kernels, failure rates, bootstrap CIs, audits, weight analyses
+  scores/          overall translation scores for each model and language direction
+  json/            saved measurements used by the analyses and paper
   distill_runs/    adapter configs and training logs of the three distillation runs
 paper/             LaTeX source, figures and generated tables
 third_party/       ALMA (prompts, data, test sets, generation code) and MetricX, as git submodules
@@ -51,18 +63,43 @@ third_party/       ALMA (prompts, data, test sets, generation code) and MetricX,
 
 Translations, segment-level scores and model weights are not in the repository.
 
+## Updating an existing checkout
+
+The scripts have moved. Update saved commands and job submissions to use these locations:
+
+| Previous location | Current location |
+|---|---|
+| `scripts/snellius/*.slurm` | `slurm/*.job` (same job names) |
+| `scripts/snellius/env.sh` | `slurm/env.sh` |
+| `scripts/score_lexical.py` | `scripts/reproduce/score_lexical.py` |
+| `scripts/summarize.py` | `scripts/reproduce/summarize.py` |
+| `outputs/baseline/<run>.tsv` | `results/scores/<run>.tsv` for newly written summaries |
+
+Existing translations and metric outputs can stay in the `outputs/` folder next to the repository.
+Old summary files are not moved automatically. Running `summarize.py` writes to `results/scores/` and replaces
+the saved table for that run, so check the resulting changes before committing them.
+Follow steps 2 and 3 below to set the folder locations and install the shared Python code with `pip install -e .`.
+Keep the two Python environments separate.
+
 ## Rebuild the paper's figures and tables
 
-No GPU and no model files needed:
+No GPU and no model files needed. Use Python 3.10–3.12 and `make`:
 
 ```bash
-git clone --recurse-submodules <repository url> && cd <repository>
-pip install matplotlib==3.9.4 numpy==1.26.4 scipy==1.13.1
-make paper                # all figures, the appendix table, and a cell-by-cell check of Tables 1 and 2
-git diff --exit-code      # the rebuilt files are byte-identical to the committed ones
+git clone https://github.com/krijnD/-Model-Compression-for-Machine-Translation-in-Large-Language-Models.git Model-Compression-MT
+cd Model-Compression-MT
+python3 -m venv .venv-paper
+source .venv-paper/bin/activate
+python -m pip install matplotlib==3.9.4 numpy==1.26.4 scipy==1.13.1
+make paper                # redraw figures, write the appendix table, check Tables 1 and 2
+git diff --exit-code      # check whether the rebuilt files differ from the saved versions
 ```
 
-To build the PDF: `cd paper && pdflatex acl_latex && bibtex acl_latex && pdflatex acl_latex && pdflatex acl_latex`.
+If you already have the repository, start with `cd` into its folder and skip cloning it.
+This figures-only setup reads the saved results and does not need the external code in `third_party/`.
+
+To build the PDF, install a LaTeX distribution, then run:
+`cd paper && pdflatex acl_latex && bibtex acl_latex && pdflatex acl_latex && pdflatex acl_latex`.
 
 | Paper | Built by | From |
 |---|---|---|
@@ -74,7 +111,8 @@ To build the PDF: `cd paper && pdflatex acl_latex && bibtex acl_latex && pdflate
 | Figure 3 (NLL at 3 bits) | `scripts/paper/plot_nll_w3.py` | `results/json/lang_nll_*.json` |
 | Figure 4 (recovered 3-bit model) | `scripts/paper/plot_heatmap_adapter.py` | `results/json/adapter_heatmap.json` |
 
-Every file in `results/` is produced by a step below; the table in [step H](#h-cpu-analyses) says which.
+The steps below explain how to produce the main results. The additional inputs needed for the failure-significance
+analysis are listed in [step H](#h-cpu-analyses).
 
 ## Full reproduction
 
@@ -100,7 +138,7 @@ Disk: about 75 GB for models (fp16, four GPTQ checkpoints, two repacked copies, 
 ### 1. Get the code
 
 ```bash
-git clone --recurse-submodules <repository url> Model-Compression-MT
+git clone --recurse-submodules https://github.com/krijnD/-Model-Compression-for-Machine-Translation-in-Large-Language-Models.git Model-Compression-MT
 cd Model-Compression-MT
 mkdir -p logs   # Slurm writes the job logs here (the folder is in git, but must exist)
 ```
@@ -114,16 +152,30 @@ Large files live next to the repository. `slurm/env.sh` and `mtcompress/paths.py
 | Variable | Default | Holds |
 |---|---|---|
 | `PROJECT_DIR` | the repository's parent folder | `venv/`, `venv-quant/`, `hf_cache/` |
-| `MODELS_DIR` | `$PROJECT_DIR/models` | fp16 ALMA-13B-R (26 GB), the GPTQ checkpoints (3.8–12.7 GiB each) |
+| `MODELS_DIR` | set explicitly to `$PROJECT_DIR/models` below | fp16 ALMA-13B-R (26 GB), the GPTQ checkpoints (3.8–12.7 GiB each) |
 | `ARTIFACTS_DIR` | `$MODELS_DIR` | repacked checkpoints (6.8 GiB each), adapters, the language identifier |
 | `OUTPUTS_DIR` | `$PROJECT_DIR/outputs` | translations and segment-level scores |
 
-Export the ones you change in your shell **before** submitting jobs; the commands below use them, and
-`sbatch --export=ALL` passes them on. Submit every job from the repository root.
+Run this from the repository root in each new shell before downloading models or submitting jobs.
+Change the paths here if your files live elsewhere:
+
+```bash
+export PROJECT_DIR="$(dirname "$PWD")"
+export MODELS_DIR="$PROJECT_DIR/models"
+export ARTIFACTS_DIR="$MODELS_DIR"
+export OUTPUTS_DIR="$PROJECT_DIR/outputs"
+export HF_HOME="$PROJECT_DIR/hf_cache"
+```
+
+**Known setup issue:** `slurm/env.sh` currently fails with `MODELS_DIR: unbound variable` if `MODELS_DIR`
+is unset. The explicit setting above avoids this error. Submit every job from the repository root;
+`sbatch --export=ALL` passes these settings to the job.
 
 ### 3. Environments
 
-Two virtual environments, because ALMA's generation code needs `transformers<=4.45` and GPTQModel needs `>=4.56`:
+Use two separate Python environments: ALMA's translation code needs `transformers==4.45.2`, while the
+compression tools need a newer version. The commands below target Snellius: Linux x86-64, Python 3.12 and
+an NVIDIA GPU. The GPTQModel download in `requirements-quant.txt` does not work on macOS or other Python versions.
 
 ```bash
 module purge; module load 2024; module load Python/3.12.3-GCCcore-13.3.0
@@ -147,8 +199,8 @@ The test sets (WMT'22, WMT'21 for Icelandic) and ALMA's training data come with 
 on the login node, with `venv` active and `HF_HOME` set (`slurm/env.sh` sets it for the jobs):
 
 ```bash
-export PROJECT_DIR=$(dirname $PWD)   # run from the repository root; or your own folders for the four below
-export HF_HOME=$PROJECT_DIR/hf_cache MODELS_DIR=$PROJECT_DIR/models ARTIFACTS_DIR=$PROJECT_DIR/models OUTPUTS_DIR=$PROJECT_DIR/outputs
+# Use the folder settings from step 2 and switch back to the scoring environment.
+source "$PROJECT_DIR/venv/bin/activate"
 # First accept the licences of the gated models on huggingface.co: Unbabel/XCOMET-XXL,
 # Unbabel/wmt23-cometkiwi-da-xxl and Unbabel/wmt22-cometkiwi-da. Then log in with a read token:
 huggingface-cli login
@@ -245,8 +297,9 @@ sbatch --export=ALL,BITS=2,ADAPTER=$ARTIFACTS_DIR/ALMA-13B-R-gptq-w2g128-kd-lora
 sbatch --export=ALL,BITS=2,ADAPTER=$ARTIFACTS_DIR/ALMA-13B-R-gptq-w2g128-kd-lora-r64-cont,EXTRA="--r 64 --alpha 128 --n-examples 60000 --init-adapter $ARTIFACTS_DIR/ALMA-13B-R-gptq-w2g128-kd-lora-r64" slurm/distill.job
 ```
 
-Each run writes `adapter.safetensors`, `adapter_config.json` and `train_log.jsonl`; ours are in
-`results/distill_runs/`. Training needs an H100: it peaks at 36–37 GiB. `SMOKE=1` runs a 30-step test first.
+Each run writes `adapter.safetensors`, `adapter_config.json` and `train_log.jsonl`. Our configurations and logs
+are in `results/distill_runs/`; the adapter weights are not included. Training needs an H100: it peaks at
+36–37 GiB. `SMOKE=1` runs a 30-step test first.
 The final 2-bit adapter is `…-r64-cont`; the first-stage `…-r64` is evaluated on two directions in step E for
 Appendix D (iv).
 
@@ -320,6 +373,14 @@ With `venv` active (`pip install -e .` done, or `export PYTHONPATH=$PWD`), after
 
 `score_failures.py` uses the language identifier from step 4; `audit_recovery.py` also writes the worst segments
 per direction to `$OUTPUTS_DIR/audit/`.
+
+**Extra inputs for `failure_significance.py`:** steps A–E do not produce everything this script reads.
+It also requires translations for `gptq-w2g128-as4-sft-r64-cont`, a model trained directly on reference translations,
+in `$OUTPUTS_DIR/gptq-w2g128-as4-sft-r64-cont/wmt22/`. The repository does not currently include instructions
+to produce that run. Without those files, the script stops with a missing-file error.
+The optional WMT24++ analysis additionally needs its test set and translations for `ood24-fp16`, `ood24-w2`
+and `ood24-w2kd`, stored under `$OUTPUTS_DIR/<run>/wmt24pp/`. That part is skipped if the test-set folder is absent.
+The saved `results/json/failure_significance.json` is available to inspect without rerunning this analysis.
 
 ### I. Rebuild and check the paper
 
